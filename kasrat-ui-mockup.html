@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasrat — UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2EEE6; --card:#FFFFFF; --card-2:#FAF9F5;
+  --ink:#2C2822; --ink-2:#6F6A5D; --ink-3:#A9A290;
+  --line:#E9E4DA; --line-2:#DCD6CA;
+  --red:#5F8B73; --red-press:#4E775F; --red-soft:#E7EFE9;
+  --blue:#6F8FA8; --amber:#C2A35E; --green:#5F8B73; --clay:#B98A93; --warm:#CC9B66; --match:#C2A35E; --below:#BB8B72;
+  --led:#E6C386; --hero:#2C2822;
+  --dark:#2B2722; --dark-2:#332E27;
+  --m-chest:#C0826E; --m-back:#5F948C; --m-sho:#C2A35E; --m-arms:#6E9A78; --m-legs:#8C7A9C; --m-core:#B98A93;
+  --disp:"Archivo",system-ui,-apple-system,sans-serif;
+  --ui:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --r:18px; --r-sm:12px;
+  --sh:0 1px 2px rgba(20,16,10,.05), 0 10px 26px -14px rgba(20,16,10,.16);
+  --sh-sm:0 1px 2px rgba(20,16,10,.05), 0 5px 14px -10px rgba(20,16,10,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--ui); color:var(--ink); line-height:1.45;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
+  background:#1B1813;
+  background-image:
+    radial-gradient(1300px 680px at 50% -12%, #2a251d, transparent 58%),
+    radial-gradient(800px 800px at 88% 116%, rgba(95,139,115,.10), transparent 60%);
+  padding:50px 24px 72px; min-height:100vh;
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.wrap{max-width:1340px;margin:0 auto}
+
+/* ---------- MASTHEAD ---------- */
+.mast{padding-bottom:30px;margin-bottom:42px;border-bottom:1px solid rgba(255,255,255,.1)}
+.mastrow{display:flex;flex-wrap:wrap;gap:28px 44px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:16px}
+.mark{width:56px;height:56px;border-radius:17px;flex:none;background:linear-gradient(150deg,var(--red),#456A55);
+  display:grid;place-items:center;box-shadow:0 14px 34px -12px rgba(95,139,115,.7), inset 0 1px 0 rgba(255,255,255,.25)}
+.mark svg{width:30px;height:30px;color:#fff}
+.kick{font-family:var(--ui);font-weight:600;font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:13px}
+.brand h1{font-family:var(--disp);font-weight:800;font-size:42px;letter-spacing:-.02em;line-height:.95;color:#F6F3EC}
+.brand h1 em{font-style:normal;color:var(--red)}
+.sub{font-family:var(--ui);font-weight:500;color:#B7B0A1;font-size:13.5px;margin-top:9px;max-width:400px;letter-spacing:.005em}
+.sub b{color:#F0EBDF;font-weight:700}
+
+.meta{display:flex;gap:38px;flex-wrap:wrap;align-items:flex-start}
+.mcol h5{font-family:var(--ui);font-weight:700;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#7E7869;margin-bottom:12px}
+.refs{display:flex;gap:18px}
+.ref{display:flex;flex-direction:column;align-items:center;gap:7px}
+.disc{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 1px 2px rgba(255,255,255,.35), 0 0 16px -2px currentColor}
+.ref span{font-family:var(--ui);font-weight:600;font-size:9px;letter-spacing:.06em;color:#9B9486;text-transform:uppercase}
+.pls{display:flex;align-items:flex-end;gap:6px}
+.pl{width:13px;border-radius:3px 3px 2px 2px;position:relative}
+.pl b{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-family:var(--ui);font-weight:700;font-size:9px;color:#9B9486}
+.tyrow{display:flex;gap:18px;align-items:baseline}
+.tyrow .a{font-family:var(--disp);font-weight:800;font-size:26px;color:#F6F3EC}
+.tyrow .b{font-family:var(--ui);font-weight:700;font-size:20px;color:#F6F3EC}
+.tyrow small{display:block;font-family:var(--ui);font-weight:600;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#7E7869;margin-top:5px}
+
+/* ---------- BOARD ---------- */
+.board{display:flex;flex-wrap:wrap;gap:50px 40px;justify-content:center;align-items:flex-start}
+.cell{width:318px;flex:none}
+.cap{display:flex;align-items:baseline;gap:10px;margin-top:18px;padding:0 4px}
+.cap .n{font-family:var(--disp);font-weight:800;font-size:14px;color:var(--red)}
+.cap .nm{font-family:var(--ui);font-weight:700;font-size:14.5px;letter-spacing:-.01em;color:#F2EEE4}
+.cap .ds{font-family:var(--ui);font-size:11px;color:#8A8474;margin-left:auto;text-align:right;max-width:142px;line-height:1.3}
+.cell.hero .cap .nm{color:var(--led)}
+
+/* ---------- DEVICE ---------- */
+.device{width:318px;height:668px;background:#0E0C0A;border-radius:46px;padding:8px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.05), 0 50px 90px -40px rgba(0,0,0,.8)}
+.cell.hero .device{box-shadow:0 0 0 2px rgba(95,139,115,.8), 0 0 0 8px rgba(95,139,115,.1), 0 54px 100px -40px rgba(0,0,0,.85)}
+.screen{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--bg);
+  display:flex;flex-direction:column;font-size:13px;color:var(--ink)}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:84px;height:23px;background:#000;border-radius:13px;z-index:40}
+.sbar{height:40px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 5px;
+  font-family:var(--ui);font-weight:700;font-size:12px;z-index:30}
+.body{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.scroll{flex:1;overflow:hidden;padding:6px 16px 10px}
+.hbar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:104px;height:4px;border-radius:3px;background:rgba(0,0,0,.22);z-index:50}
+
+/* tab bar */
+.tabs{flex:none;height:60px;display:flex;border-top:1px solid var(--line);background:rgba(255,255,255,.55);backdrop-filter:blur(8px)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--ink-3);position:relative}
+.tab svg{width:21px;height:21px}
+.tab span{font-family:var(--ui);font-weight:600;font-size:9px;letter-spacing:.02em}
+.tab.on{color:var(--red)}
+.tab.on::after{content:"";position:absolute;bottom:9px;width:5px;height:5px;border-radius:50%;background:var(--red)}
+
+/* ---------- atoms ---------- */
+.kik{font-family:var(--ui);font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.title{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;line-height:1}
+.appbar{display:flex;align-items:flex-end;gap:10px;padding:4px 2px 14px}
+.appbar .t{font-family:var(--disp);font-weight:800;font-size:23px;letter-spacing:-.02em;line-height:1}
+.iconbtn{width:36px;height:36px;border-radius:14px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center;color:var(--ink-2);flex:none}
+.iconbtn svg{width:17px;height:17px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-sm);padding:14px}
+.card+.card{margin-top:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;height:50px;border-radius:16px;background:var(--red);color:#fff;
+  font-family:var(--ui);font-weight:700;font-size:15px;box-shadow:0 12px 26px -14px rgba(95,139,115,.85)}
+.btn svg{width:18px;height:18px}
+.btn.ink{background:var(--hero);box-shadow:0 12px 26px -16px rgba(20,16,10,.6)}
+.btn.out{background:var(--card);color:var(--ink);box-shadow:var(--sh-sm)}
+.row{display:flex;align-items:center;gap:10px}
+.btw{display:flex;align-items:center;justify-content:space-between}
+.chip{font-family:var(--ui);font-weight:600;font-size:11.5px;padding:7px 14px;border-radius:13px;background:var(--card);box-shadow:var(--sh-sm);color:var(--ink-2);white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;box-shadow:none}
+.mtag{font-family:var(--ui);font-weight:700;font-size:9.5px;letter-spacing:.01em;padding:3px 8px;border-radius:7px;color:#fff;white-space:nowrap}
+.mc-chest{background:var(--m-chest)} .mc-back{background:var(--m-back)} .mc-sho{background:var(--m-sho)}
+.mc-arms{background:var(--m-arms)} .mc-legs{background:var(--m-legs)} .mc-core{background:var(--m-core)}
+.soft-chest{background:#F3E7E0;color:var(--m-chest)}
+.dim{color:var(--ink-2)} .dim3{color:var(--ink-3)}
+.hair{height:1px;background:var(--line);margin:11px 0}
+.bign{font-family:var(--disp);font-weight:800;letter-spacing:-.03em;line-height:.85}
+.seg{height:8px;flex:1;border-radius:4px;background:var(--line-2)}
+.seg.on{background:var(--red)}
+
+/* loaded barbell */
+.barbell{display:flex;align-items:center;height:38px}
+.sleeve{height:6px;background:linear-gradient(#d8d2c4,#a39d8e);flex:1;border-radius:3px}
+.collar{width:5px;height:15px;border-radius:2px;background:var(--ink-3);margin:0 2px}
+.stk{display:flex;align-items:center;gap:3px}
+.plk{width:10px;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.12)}
+
+/* scoreboard */
+.score{background:var(--dark);border-radius:12px}
+.led{font-family:var(--disp);font-weight:800;color:var(--led);letter-spacing:.01em;text-shadow:0 0 16px rgba(230,195,134,.35)}
+
+/* ticket */
+.perf{border-top:1.5px dashed var(--line-2);margin:11px -14px}
+
+/* colophon */
+.colo{margin-top:54px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-wrap:wrap;gap:18px 40px;justify-content:space-between}
+.colo p{font-size:12px;color:#8A8474;max-width:560px;line-height:1.65}
+.colo .mn{font-family:var(--disp);font-weight:800;color:#F2EEE4}
+.taxo{display:flex;gap:15px;flex-wrap:wrap}
+.taxo .x{display:flex;align-items:center;gap:7px;font-family:var(--ui);font-weight:600;font-size:11px;color:#9B9486}
+.taxo .x i{width:11px;height:11px;border-radius:3px;display:block}
+
+/* ---------------- fluid motion ---------------- */
+.cell{opacity:0;animation:riseIn .8s cubic-bezier(.22,.61,.36,1) both}
+@keyframes riseIn{from{opacity:0;transform:translateY(26px) scale(.984)}to{opacity:1;transform:none}}
+.cell:nth-child(1){animation-delay:0.02s}
+.cell:nth-child(2){animation-delay:0.08s}
+.cell:nth-child(3){animation-delay:0.14s}
+.cell:nth-child(4){animation-delay:0.20s}
+.cell:nth-child(5){animation-delay:0.26s}
+.cell:nth-child(6){animation-delay:0.32s}
+.cell:nth-child(7){animation-delay:0.38s}
+.cell:nth-child(8){animation-delay:0.44s}
+.cell:nth-child(9){animation-delay:0.50s}
+.cell:nth-child(10){animation-delay:0.56s}
+.cell:nth-child(11){animation-delay:0.62s}
+.cell:nth-child(12){animation-delay:0.68s}
+.cell:nth-child(13){animation-delay:0.74s}
+.cell:nth-child(14){animation-delay:0.80s}
+.cell:nth-child(15){animation-delay:0.86s}
+.cell:nth-child(16){animation-delay:0.92s}
+.cell:nth-child(17){animation-delay:0.98s}
+.cell:nth-child(18){animation-delay:1.04s}
+.device{transition:transform .55s cubic-bezier(.22,.61,.36,1), box-shadow .55s cubic-bezier(.22,.61,.36,1)}
+.cell:hover .device{transform:translateY(-12px)}
+.btn,.chip,.iconbtn{transition:transform .22s ease, box-shadow .22s ease}
+.btn:hover{transform:translateY(-1.5px)}
+.chip:hover{transform:translateY(-1px)}
+.led{animation:ledPulse 2.4s ease-in-out infinite}
+@keyframes ledPulse{0%,100%{opacity:.9;text-shadow:0 0 10px rgba(230,195,134,.26)}50%{opacity:1;text-shadow:0 0 20px rgba(230,195,134,.6)}}
+@keyframes flicker{0%,100%{transform:scale(1) rotate(0);opacity:.9}45%{transform:scale(1.09) rotate(-3deg)}55%{transform:scale(1.05) rotate(2deg);opacity:1}}
+@keyframes popScale{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
+@keyframes sqIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}.cell{opacity:1!important;transform:none!important}}
+
+/* onboarding + celebration */
+.odot{width:7px;height:7px;border-radius:50%;background:var(--line-2);transition:all .3s}
+.odot.on{width:22px;border-radius:4px;background:var(--red)}
+.goalt{flex:1;background:var(--card);box-shadow:var(--sh-sm);border-radius:14px;padding:14px 0;text-align:center;transition:all .2s}
+.goalt .gn{font-family:var(--disp);font-weight:800;font-size:26px;line-height:1}
+.goalt small{display:block;font-size:10px;color:var(--ink-3);font-weight:700;margin-top:3px;letter-spacing:.05em}
+.goalt.on{background:var(--red);box-shadow:0 10px 22px -12px rgba(95,139,115,.55)}
+.goalt.on .gn{color:#fff}.goalt.on small{color:#e6efe9}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.burst{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.rays{position:absolute;top:var(--ry,40%);left:50%;width:320px;height:320px;transform:translate(-50%,-50%);
+  background:repeating-conic-gradient(from 0deg, rgba(204,155,102,.18) 0deg 6deg, transparent 6deg 17deg);
+  border-radius:50%;animation:spin 26s linear infinite;
+  -webkit-mask-image:radial-gradient(circle,#000 0 40%,transparent 60%);mask-image:radial-gradient(circle,#000 0 40%,transparent 60%)}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.confetti i{position:absolute;width:7px;height:7px;border-radius:1px;opacity:0;animation:popScale .6s ease both}
+
+/* routine sections (PPT-style groups) */
+.sect{border-radius:var(--r);background:var(--card);box-shadow:var(--sh-sm);overflow:hidden}
+.shead{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--card-2)}
+.sname{font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink)}
+.scount{font-family:var(--ui);font-weight:700;font-size:10px;color:var(--ink-2);background:var(--card);border-radius:20px;padding:2px 9px;box-shadow:var(--sh-sm)}
+.chev2{transition:transform .25s ease}.chev2.op{transform:rotate(90deg)}
+
+.pgbg{background:var(--pl)}
+body[data-theme="dark"] .pgbg{background:var(--pd)}
+.mast{position:relative}
+.themesw{position:absolute;top:0;right:0;display:flex;gap:3px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:3px}
+.tsw{font-family:var(--ui);font-weight:600;font-size:11px;color:#B7B0A1;background:none;border:none;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.tsw.on{background:var(--red);color:#fff}
+body[data-theme="dark"]{
+  --bg:#15140F; --card:#221F18; --card-2:#1B1813;
+  --ink:#ECE8DF; --ink-2:#9E988B; --ink-3:#6B6559;
+  --line:#2F2B22; --line-2:#38332B;
+  --red:#729E84; --red-press:#608B70; --red-soft:#1B271F;
+  --hero:#2A2720; --dark:#100F0C; --led:#F0CE85; --warm:#D8A874;
+  --m-chest:#D38C78; --m-back:#73A3B1; --m-sho:#D4B26C; --m-arms:#7EB189; --m-legs:#A99BB7; --m-core:#CB9CA5;
+}
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .iconbtn,
+body[data-theme="dark"] .chip,
+body[data-theme="dark"] .sect{box-shadow:none;border:1px solid var(--line)}
+body[data-theme="dark"] .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+body[data-theme="dark"] .tabs{background:rgba(20,18,14,.65);border-top-color:var(--line)}
+body[data-theme="dark"] .hbar{background:rgba(255,255,255,.22)}
+body[data-theme="dark"] .goalt{border:1px solid var(--line)}
+body[data-theme="dark"] .goalt.on{border-color:var(--red)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ICON SPRITE -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ic-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+<symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+<symbol id="ic-dumbbell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></symbol>
+<symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="ic-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 4-6"/></symbol>
+<symbol id="ic-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></symbol>
+<symbol id="ic-flame" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-1 4-2.5 6S7 12 8 14c-2-.5-3-2-3-2 0 4 3 8 7 8s7-3 7-7c0-3-2-5-3.5-6.5C12 5 13 4 12 2Z"/></symbol>
+<symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="ic-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.4"/><rect x="14" y="5" width="4" height="14" rx="1.4"/></symbol>
+<symbol id="ic-skip" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5l9 7-9 7V5Z"/><rect x="16" y="5" width="3" height="14" rx="1.2"/></symbol>
+<symbol id="ic-vibe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M3 9v6M21 9v6"/></symbol>
+<symbol id="ic-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+<symbol id="ic-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+<symbol id="ic-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/></symbol>
+<symbol id="ic-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4 4.5-4M5 20h14"/></symbol>
+<symbol id="ic-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></symbol>
+<symbol id="ic-grip" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></symbol>
+<symbol id="ic-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M10 18h4M9 21h6"/></symbol>
+<symbol id="ic-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></symbol>
+<symbol id="ic-rest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M5 18v-4a7 7 0 0 1 14 0v4M9 7l1-3M14 7l1-3"/></symbol>
+<symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+</defs></svg>
+
+<!-- MASTHEAD -->
+<header class="mast">
+  <div class="themesw"><button class="tsw on" data-t="light">Light</button><button class="tsw" data-t="dark">Dark</button></div>
+  <div class="mastrow">
+    <div>
+      <span class="kick">Kasrat · Product UI · v1</span>
+      <div class="brand">
+        <div class="mark"><svg><use href="#ic-dumbbell"/></svg></div>
+        <div>
+          <h1>Kas<em>rat</em></h1>
+          <div class="sub">A strength logbook built like a meet — <b>load the bar, call the lift, chase the board.</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="mcol">
+        <h5>Progress = referee lights</h5>
+        <div class="refs">
+          <div class="ref"><span class="disc" style="background:var(--green);color:var(--green)"></span><span>Good</span></div>
+          <div class="ref"><span class="disc" style="background:var(--amber);color:var(--amber)"></span><span>Match</span></div>
+          <div class="ref"><span class="disc" style="background:var(--below);color:var(--below)"></span><span>Below</span></div>
+        </div>
+      </div>
+      <div class="mcol">
+        <h5>Weight = plate color</h5>
+        <div class="pls">
+          <div class="pl" style="height:34px;background:#C0826E"><b>25</b></div>
+          <div class="pl" style="height:30px;background:var(--blue)"><b>20</b></div>
+          <div class="pl" style="height:25px;background:var(--amber)"><b>15</b></div>
+          <div class="pl" style="height:21px;background:var(--green)"><b>10</b></div>
+          <div class="pl" style="height:16px;background:#EAE6DC"><b>5</b></div>
+        </div>
+      </div>
+      <div class="mcol">
+        <h5>Type</h5>
+        <div class="tyrow"><span class="a">Aa<small>Archivo</small></span><span class="b">Aa<small>Hanken</small></span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- BOARD -->
+<main class="board">
+
+<!-- O1 WELCOME -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F2EADD;--pd:#1A1611"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px">
+        <div class="mark" style="width:56px;height:56px;margin-bottom:22px"><svg><use href="#ic-dumbbell"/></svg></div>
+        <div class="title" style="font-size:29px;line-height:1.08">Let's get<br>you lifting.</div>
+        <div class="dim" style="margin-top:11px;font-size:13px">No email, no password — your training lives on your device.</div>
+        <div style="margin-top:28px">
+          <div class="kik" style="margin-bottom:9px">What should we call you?</div>
+          <div style="background:#fff;border-radius:14px;box-shadow:var(--sh-sm);padding:14px 16px"><span style="font-weight:700;font-size:16px">Sam</span><span style="width:2px;height:18px;background:var(--red);display:inline-block;margin-left:3px;animation:blink 1.1s step-end infinite;vertical-align:-3px"></span></div>
+        </div>
+      </div>
+      <div style="padding:14px 18px 18px">
+        <div class="row" style="gap:6px;justify-content:center;margin-bottom:14px"><i class="odot on"></i><i class="odot"></i><i class="odot"></i></div>
+        <div class="btn">Continue</div>
+      </div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">01</span><span class="nm">Welcome</span><span class="ds">Name only · zero friction</span></figcaption>
+</figure>
+
+<!-- O2 GOAL -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F5EFD6;--pd:#1B1810"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 20px">
+        <div class="kik">Your goal</div>
+        <div class="title" style="font-size:26px;line-height:1.12;margin-top:6px">How many days<br>a week?</div>
+        <div class="row" style="gap:9px;margin-top:24px">
+          <div class="goalt"><div class="gn">2</div><small>DAYS</small></div>
+          <div class="goalt on"><div class="gn">3</div><small>DAYS</small></div>
+          <div class="goalt"><div class="gn">4</div><small>DAYS</small></div>
+          <div class="goalt"><div class="gn">5</div><small>DAYS</small></div>
+        </div>
+        <div class="dim" style="margin-top:18px;font-size:12.5px;line-height:1.5">This becomes your weekly streak goal. Change it anytime — raising it never breaks your streak.</div>
+      </div>
+      <div style="padding:14px 18px 18px">
+        <div class="row" style="gap:6px;justify-content:center;margin-bottom:14px"><i class="odot"></i><i class="odot on"></i><i class="odot"></i></div>
+        <div class="btn">Continue</div>
+      </div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">02</span><span class="nm">Set your goal</span><span class="ds">Weekly target · forgiving by design</span></figcaption>
+</figure>
+
+<!-- O3 FIRST ROUTINE -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F8ECE1;--pd:#1C1712"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div class="scroll" style="padding:14px 18px 8px;flex:1">
+        <div class="kik">Routine A</div>
+        <div class="title" style="font-size:25px;margin-top:6px;line-height:1.1">Build your<br>first routine</div>
+        <div class="card" style="margin-top:16px;display:flex;align-items:center;gap:11px;border:1.5px solid var(--red);box-shadow:none">
+          <div style="width:38px;height:38px;border-radius:11px;background:var(--red);display:grid;place-items:center;flex:none"><svg style="width:19px;height:19px;color:#fff"><use href="#ic-bolt"/></svg></div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13.5px">Use a starter Push day</div><div class="kik" style="margin-top:2px">Pre-filled · tweak later</div></div>
+          <svg style="width:16px;height:16px;color:var(--red)"><use href="#ic-chev"/></svg>
+        </div>
+        <div class="kik" style="margin:16px 2px 9px;color:var(--ink-2)">Or pick exercises</div>
+        <div class="card" style="padding:11px;display:flex;align-items:center;gap:10px"><span style="width:21px;height:21px;border-radius:7px;background:var(--red);display:grid;place-items:center;flex:none"><svg style="width:12px;height:12px;color:#fff"><use href="#ic-check"/></svg></span><div style="flex:1;font-weight:600;font-size:13px">Bench Press</div><span class="mtag mc-chest">Chest</span></div>
+        <div class="card" style="padding:11px;display:flex;align-items:center;gap:10px"><span style="width:21px;height:21px;border-radius:7px;background:var(--red);display:grid;place-items:center;flex:none"><svg style="width:12px;height:12px;color:#fff"><use href="#ic-check"/></svg></span><div style="flex:1;font-weight:600;font-size:13px">Overhead Press</div><span class="mtag mc-sho">Delts</span></div>
+        <div class="card" style="padding:11px;display:flex;align-items:center;gap:10px"><span style="width:21px;height:21px;border-radius:7px;border:2px solid var(--line-2);display:grid;place-items:center;flex:none"><svg style="width:12px;height:12px;color:var(--ink-3)"><use href="#ic-plus"/></svg></span><div style="flex:1;font-weight:600;font-size:13px;color:var(--ink-2)">Lat Pulldown</div><span class="mtag mc-back">Back</span></div>
+      </div>
+      <div style="padding:10px 18px 18px;border-top:1px solid var(--line)">
+        <div class="row" style="gap:6px;justify-content:center;margin-bottom:12px"><i class="odot"></i><i class="odot"></i><i class="odot on"></i></div>
+        <div class="btn"><svg><use href="#ic-bolt"/></svg>Start my first workout</div>
+      </div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">03</span><span class="nm">First routine</span><span class="ds">One-tap starter · never a blank screen</span></figcaption>
+</figure>
+
+<!-- O4 FIRST WIN -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#FAF1DC;--pd:#1E1A11">
+    <div class="burst"><div class="rays" style="--ry:36%"></div></div>
+    <div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0;position:relative">
+      <div class="confetti">
+        <i style="top:17%;left:17%;background:var(--warm);animation-delay:.35s"></i>
+        <i style="top:13%;left:73%;background:var(--m-back);animation-delay:.5s"></i>
+        <i style="top:29%;left:85%;background:var(--m-chest);animation-delay:.62s"></i>
+        <i style="top:25%;left:9%;background:var(--m-arms);animation-delay:.55s"></i>
+        <i style="top:43%;left:87%;background:var(--warm);animation-delay:.72s"></i>
+        <i style="top:47%;left:8%;background:var(--m-sho);animation-delay:.66s"></i>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px">
+        <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(150deg,#E8C36B,#CC9B66);display:grid;place-items:center;box-shadow:0 16px 40px -12px rgba(204,155,102,.7);animation:popScale .8s cubic-bezier(.34,1.4,.5,1) both"><svg style="width:46px;height:46px;color:#fff"><use href="#ic-trophy"/></svg></div>
+        <div class="kik" style="color:var(--warm);margin-top:20px">Achievement unlocked</div>
+        <div class="title" style="font-size:36px;margin-top:8px;line-height:1">First Win</div>
+        <div class="dim" style="margin-top:10px;font-size:13.5px">You logged your first workout.<br>Your streak starts now.</div>
+        <div class="row" style="gap:9px;margin-top:18px">
+          <div class="card" style="padding:10px 16px"><div class="bign" style="font-size:20px">1</div><div class="kik" style="margin-top:2px">workout</div></div>
+          <div class="card" style="padding:10px 16px"><div class="bign" style="font-size:20px;color:var(--red)">1</div><div class="kik" style="margin-top:2px">week streak</div></div>
+        </div>
+      </div>
+      <div style="padding:12px 18px 18px"><div class="btn">Go to my home</div></div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">04</span><span class="nm">First Win</span><span class="ds">The activation moment · reward the first finish</span></figcaption>
+</figure>
+
+
+<!-- 01 HOME -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#E6F1E8;--pd:#121A15"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="btw" style="padding:2px 0 14px"><div><div class="kik">Monday · Push day</div><div class="title" style="font-size:24px;margin-top:5px">Evening, Sam</div></div><div class="iconbtn"><svg><use href="#ic-bell"/></svg></div></div>
+
+      <!-- streak -->
+      <div class="card" style="background:var(--hero);box-shadow:var(--sh);padding:15px">
+        <div class="btw"><span class="kik" style="color:#9B9486">Week streak</span><span style="font-family:var(--ui);font-weight:700;font-size:10px;letter-spacing:.04em;color:var(--led)">GOAL 3 / WK</span></div>
+        <div class="row" style="align-items:flex-end;gap:11px;margin-top:6px">
+          <svg style="width:24px;height:28px;color:var(--warm)"><use href="#ic-flame"/></svg>
+          <span class="bign" style="font-size:52px;color:#fff">5</span>
+          <span style="color:#9B9486;font-weight:500;margin-bottom:8px;font-size:12px">weeks · 2 of 3 done</span>
+        </div>
+        <div class="row" style="gap:6px;margin-top:13px"><i class="seg on"></i><i class="seg on"></i><i class="seg" style="background:#33302a"></i></div><div class="kik" style="color:var(--led);margin-top:10px">1 more workout keeps your streak</div>
+      </div>
+
+      <!-- today -->
+      <div class="kik" style="margin:15px 2px 8px;color:var(--ink-2)">Today's session</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 14px 12px">
+          <div class="title" style="font-size:18px">Routine A · Push</div>
+          <div class="row" style="gap:6px;margin-top:10px"><span class="mtag mc-chest">Chest</span><span class="mtag mc-sho">Shoulders</span><span class="mtag mc-arms">Triceps</span><span class="kik" style="margin-left:auto">6 lifts</span></div>
+        </div>
+        <div class="btn" style="border-radius:0;height:48px"><svg><use href="#ic-bolt"/></svg>Start workout</div>
+      </div>
+
+      <div class="row" style="gap:10px;margin-top:10px;align-items:stretch">
+        <div class="card" style="flex:1;margin:0;padding:13px">
+          <div class="kik">Volume · week</div>
+          <div class="bign" style="font-size:25px;margin-top:6px">14.2<span style="font-size:13px;color:var(--ink-3);font-weight:700">k</span></div>
+          <div class="row" style="gap:3px;align-items:flex-end;height:20px;margin-top:8px"><i style="flex:1;height:40%;background:var(--line-2);border-radius:2px"></i><i style="flex:1;height:70%;background:var(--line-2);border-radius:2px"></i><i style="flex:1;height:55%;background:var(--red);border-radius:2px"></i><i style="flex:1;height:88%;background:var(--red);border-radius:2px"></i><i style="flex:1;height:30%;background:var(--line-2);border-radius:2px"></i></div>
+        </div>
+        <div class="card" style="flex:1;margin:0;padding:13px">
+          <div class="kik">Latest PR</div>
+          <div class="row" style="gap:6px;margin-top:6px"><svg style="width:14px;height:14px;color:var(--match)"><use href="#ic-trophy"/></svg><span style="font-weight:700;font-size:12.5px">Bench 1RM</span></div>
+          <div class="bign" style="font-size:25px;margin-top:4px;color:var(--green)">102.5</div>
+          <div class="kik" style="margin-top:3px">est · 2d ago</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;padding:0;overflow:hidden;display:flex;align-items:stretch">
+        <span style="width:5px;background:var(--m-legs)"></span>
+        <div style="padding:12px 13px"><div style="font-weight:700;font-size:13px">Legs — 7 days untrained</div><div class="kik" style="margin-top:3px">Worth a look this week</div></div>
+      </div>
+    </div></div>
+    <nav class="tabs"><a class="tab on"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">05</span><span class="nm">Home</span><span class="ds">Streak, today's session, insight</span></figcaption>
+</figure>
+
+<!-- 02 SCHEDULE -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F5EFD6;--pd:#1B1810"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">Schedule</div><div class="t">Your week</div></div><div class="iconbtn"><svg><use href="#ic-dots"/></svg></div></div>
+
+      <div class="card" style="padding:4px 14px">
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Mon</span><span style="font-weight:600;font-size:13.5px">Routine A</span></div><span class="mtag mc-chest">Push</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Tue</span><span style="font-weight:600;font-size:13.5px">Routine B</span></div><span class="mtag mc-back">Pull</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Wed</span><span class="dim3" style="font-weight:600;font-size:13.5px">Rest</span></div><svg style="width:15px;height:15px;color:var(--ink-3)"><use href="#ic-rest"/></svg></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Thu</span><span style="font-weight:600;font-size:13.5px">Routine C</span></div><span class="mtag mc-legs">Legs</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Fri</span><span style="font-weight:600;font-size:13.5px">Routine A</span></div><span class="mtag mc-chest">Push</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Sat</span><span style="font-weight:600;font-size:13.5px">Routine B</span></div><span class="mtag mc-back">Pull</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:13px"><span class="kik" style="width:32px">Sun</span><span class="dim3" style="font-weight:600;font-size:13.5px">Rest</span></div><svg style="width:15px;height:15px;color:var(--ink-3)"><use href="#ic-rest"/></svg></div>
+      </div>
+
+      <div class="card" style="margin-top:11px;display:flex;align-items:center;justify-content:space-between;padding:13px 14px">
+        <div class="row" style="gap:10px"><svg style="width:17px;height:17px;color:var(--red)"><use href="#ic-rest"/></svg><div><div style="font-weight:700;font-size:13px">Planned deload</div><div class="kik" style="margin-top:2px">Smart rest keeps the streak</div></div></div>
+        <div style="width:44px;height:26px;border-radius:14px;background:var(--line-2);position:relative"><i style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></i></div>
+      </div>
+      <div class="kik" style="text-align:center;margin-top:12px;color:var(--ink-3)">Schedule is a suggestion — lift any routine, any day.</div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab on"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">06</span><span class="nm">Schedule</span><span class="ds">Routine per day · deload</span></figcaption>
+</figure>
+
+<!-- 03 ROUTINE EDITOR -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F8ECE1;--pd:#1C1712"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div class="iconbtn"><svg><use href="#ic-back"/></svg></div><div style="flex:1"><div class="kik">Push · 6 lifts · 3 sections</div><div class="t">Routine A</div></div><span class="chip on">Save</span></div>
+
+      <div class="kik" style="margin:0 2px 9px;color:var(--ink-2)">Sections · drag to reorder</div>
+
+      <!-- collapsed section -->
+      <div class="sect">
+        <div class="shead"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-grip"/></svg><svg class="chev2" style="width:13px;height:13px;color:var(--ink-2)"><use href="#ic-chev"/></svg><i style="width:9px;height:9px;border-radius:3px;background:var(--m-sho)"></i><span class="sname">Warm-up</span><span class="scount" style="margin-left:auto">2</span></div>
+      </div>
+
+      <!-- main work (expanded) -->
+      <div class="sect" style="margin-top:10px">
+        <div class="shead"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-grip"/></svg><svg class="chev2 op" style="width:13px;height:13px;color:var(--ink-2)"><use href="#ic-chev"/></svg><i style="width:9px;height:9px;border-radius:3px;background:var(--red)"></i><span class="sname">Main work</span><span class="scount" style="margin-left:auto">2</span></div>
+        <div style="padding:7px">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 9px"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-grip"/></svg><div style="flex:1"><div style="font-weight:600;font-size:13px">Bench Press</div><div class="num dim" style="font-size:11px;margin-top:2px">4 × 6–8 · 100 kg</div></div><span class="mtag mc-chest">Chest</span></div>
+          <div class="hair" style="margin:0 9px"></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 9px"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-grip"/></svg><div style="flex:1"><div style="font-weight:600;font-size:13px">Overhead Press</div><div class="num dim" style="font-size:11px;margin-top:2px">4 × 8 · 50 kg</div></div><span class="mtag mc-sho">Delts</span></div>
+        </div>
+      </div>
+
+      <!-- accessories (expanded, superset nested inside) -->
+      <div class="sect" style="margin-top:10px">
+        <div class="shead"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-grip"/></svg><svg class="chev2 op" style="width:13px;height:13px;color:var(--ink-2)"><use href="#ic-chev"/></svg><i style="width:9px;height:9px;border-radius:3px;background:var(--m-back)"></i><span class="sname">Accessories</span><span class="scount" style="margin-left:auto">2</span></div>
+        <div style="padding:7px">
+          <div style="border-radius:12px;background:var(--red-soft);padding:5px">
+            <div class="row" style="padding:4px 8px 6px;gap:6px"><svg style="width:12px;height:12px;color:var(--red)"><use href="#ic-swap"/></svg><span style="font-weight:700;font-size:9.5px;letter-spacing:.1em;color:var(--red)">SUPERSET</span><span class="kik" style="margin-left:auto;color:var(--m-chest)">rest after · 90s</span></div>
+            <div class="card" style="padding:9px 10px;box-shadow:none"><div style="display:flex;align-items:center;gap:9px"><svg style="width:13px;height:13px;color:var(--ink-3)"><use href="#ic-grip"/></svg><div style="flex:1"><div style="font-weight:600;font-size:13px">Incline DB Press</div><div class="num dim" style="font-size:11px;margin-top:2px">3 × 10 · 30 kg</div></div><span class="mtag mc-chest">Chest</span></div></div>
+            <div class="card" style="padding:9px 10px;margin-top:5px;box-shadow:none"><div style="display:flex;align-items:center;gap:9px"><svg style="width:13px;height:13px;color:var(--ink-3)"><use href="#ic-grip"/></svg><div style="flex:1"><div style="font-weight:600;font-size:13px">Cable Fly</div><div class="num dim" style="font-size:11px;margin-top:2px">3 × 12 · 15 kg</div></div><span class="mtag mc-chest">Chest</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kik" style="margin:13px 2px 8px;color:var(--ink-2)">Add a section</div>
+      <div class="row" style="gap:6px;overflow:hidden"><span class="chip on">+ Warm-up</span><span class="chip">+ Main</span><span class="chip">+ Accessories</span><span class="chip">+ Cooldown</span></div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab on"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">07</span><span class="nm">Routine editor</span><span class="ds">PPT-style sections · supersets nest inside</span></figcaption>
+</figure>
+
+<!-- 04 LIVE LOGGER (HERO) -->
+<figure class="cell hero">
+  <div class="device"><div class="screen pgbg" style="--pl:#E6EEF3;--pd:#12161F"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div style="padding:6px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px">
+        <div class="iconbtn" style="width:32px;height:32px"><svg><use href="#ic-back"/></svg></div>
+        <div style="font-weight:700;font-size:13.5px;flex:1">Push day</div>
+        <div class="score" style="padding:6px 10px;display:flex;align-items:center;gap:5px"><svg style="width:12px;height:12px;color:var(--led)"><use href="#ic-clock"/></svg><span class="led" style="font-size:13px">24:18</span></div>
+      </div>
+
+      <div style="padding:8px 16px;display:flex;align-items:center;gap:8px;background:var(--card-2);border-bottom:1px solid var(--line)"><i style="width:8px;height:8px;border-radius:3px;background:var(--red)"></i><span class="kik" style="color:var(--ink)">Main work</span><span class="kik" style="margin-left:auto">Lift 1 of 2</span></div>
+      <div class="scroll" style="padding-top:10px">
+        <div class="btw" style="align-items:flex-start"><div><div class="title" style="font-size:22px">Bench Press</div><div class="kik" style="margin-top:5px">Chest · Barbell · Attempt 2 of 4</div></div><div class="iconbtn" style="width:32px;height:32px"><svg><use href="#ic-dots"/></svg></div></div>
+
+        <!-- set board -->
+        <div style="margin-top:12px">
+          <div class="row" style="padding:0 6px 7px"><span class="kik" style="width:28px">Set</span><span class="kik" style="width:56px">Prev</span><span class="kik" style="flex:1;text-align:center">Kg</span><span class="kik" style="flex:1;text-align:center">Reps</span><span class="kik" style="width:26px;text-align:right">✓</span></div>
+
+          <div class="card" style="padding:9px 6px;box-shadow:none;background:var(--card-2);opacity:.65;border-radius:12px"><div class="row"><span style="width:28px;font-weight:700;color:var(--amber);font-size:11px">W</span><span class="num dim3" style="width:56px;font-size:11px">60×10</span><span class="num" style="flex:1;text-align:center">60</span><span class="num" style="flex:1;text-align:center">10</span><span style="width:26px;text-align:right"><svg style="width:14px;height:14px;color:var(--ink-3)"><use href="#ic-check"/></svg></span></div></div>
+
+          <div class="card" style="padding:9px 6px;margin-top:6px;border-radius:12px;box-shadow:var(--sh-sm);position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green)"></span><div class="row" style="padding-left:4px"><span style="width:28px;font-weight:700;font-size:12px">1</span><span class="num dim3" style="width:52px;font-size:11px">80×8</span><span class="num" style="flex:1;text-align:center;color:var(--green);font-weight:800">100</span><span class="num" style="flex:1;text-align:center">8</span><span style="width:26px;text-align:right"><svg style="width:14px;height:14px;color:var(--green)"><use href="#ic-check"/></svg></span></div></div>
+
+          <!-- active scoreboard -->
+          <div class="score" style="padding:10px 6px;margin-top:6px;position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--led)"></span><div class="row" style="padding-left:4px"><span style="width:28px;font-weight:700;color:#fff;font-size:12px">2</span><span class="num" style="width:52px;font-size:11px;color:#9B9486">80×8</span><span class="led" style="flex:1;text-align:center;font-size:20px">100</span><span class="led" style="flex:1;text-align:center;font-size:20px">8</span><span style="width:26px;text-align:right"><i style="display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid #5f5a50"></i></span></div></div>
+
+          <div class="btw" style="padding:9px 4px 0">
+            <div class="row" style="gap:6px"><span class="disc" style="width:12px;height:12px;background:var(--green);color:var(--green)"></span><span class="disc" style="width:12px;height:12px;background:#cdd6c8;box-shadow:none;opacity:.45"></span><span class="disc" style="width:12px;height:12px;background:#E2DBCF;box-shadow:none;opacity:.45"></span><span style="font-weight:700;font-size:11px;color:var(--green)">Good lift</span></div>
+            <span class="kik">last 80×8</span>
+          </div>
+        </div>
+
+        <!-- loaded barbell -->
+        <div class="card" style="margin-top:12px;padding:11px 12px">
+          <div class="barbell">
+            <div class="stk"><div class="plk" style="height:28px;background:var(--blue)"></div><div class="plk" style="height:28px;background:var(--blue)"></div><div class="plk" style="height:17px;background:#EAE6DC;box-shadow:inset 0 0 0 1px #cfc9bb"></div></div>
+            <div class="collar"></div><div class="sleeve"></div>
+          </div>
+          <div class="btw" style="margin-top:4px"><span class="num" style="font-weight:700;font-size:13px">100 kg <span class="dim3" style="font-weight:500">· 20·20·5 / side</span></span><span class="kik">plate calc</span></div>
+        </div>
+
+        <div class="row" style="gap:7px;margin-top:11px"><span class="chip" style="flex:1;justify-content:center;display:flex">+1.25</span><span class="chip" style="flex:1;justify-content:center;display:flex">+2.5</span><span class="chip" style="flex:1;justify-content:center;display:flex">+5</span><span class="chip on">Normal</span></div>
+      </div>
+
+      <div style="padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:9px">
+        <div class="btn out" style="flex:1;height:48px"><svg><use href="#ic-rest"/></svg>Rest 2:00</div>
+        <div class="btn" style="flex:1.3;height:48px"><svg><use href="#ic-check"/></svg>Log set</div>
+      </div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">08</span><span class="nm">Live logger</span><span class="ds">Showpiece — set board, ref lights, loaded bar</span></figcaption>
+</figure>
+
+<!-- 05 REST -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#ECE8F4;--pd:#16131E"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div class="btw" style="padding:14px 16px"><span class="kik" style="color:var(--ink-2)">Rest clock</span><span style="font-weight:700;font-size:10px;letter-spacing:.04em;color:var(--red)">AUTO-STARTED</span></div>
+
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:14px">
+        <div style="width:100%;background:var(--dark);border-radius:20px;padding:24px 16px;text-align:center;box-shadow:var(--sh)">
+          <div class="kik" style="color:#8C8678">Remaining</div>
+          <div class="led" style="font-size:76px;line-height:.82;margin-top:6px">1:18</div>
+          <div style="width:78%;height:7px;border-radius:5px;background:#3a352d;margin:13px auto 0"><div style="width:65%;height:100%;border-radius:5px;background:var(--led)"></div></div>
+          <div class="kik" style="color:#8C8678;margin-top:9px">of 2:00</div>
+        </div>
+        <div class="row" style="gap:7px;color:var(--ink-2)"><svg style="width:14px;height:14px"><use href="#ic-vibe"/></svg><span style="font-weight:500;font-size:11.5px">Buzzes when done — even if locked</span></div>
+      </div>
+
+      <div style="padding:0 16px 10px">
+        <div class="card">
+          <div class="kik" style="color:var(--ink-2);margin-bottom:7px">Up next · Main work</div>
+          <div class="btw"><div><div style="font-weight:700;font-size:14px">Bench Press · Set 3</div><div class="num dim" style="font-size:11px;margin-top:3px">target 80kg × 8 · last 80×8</div></div><span class="mtag mc-chest">Chest</span></div>
+        </div>
+      </div>
+
+      <div style="padding:4px 16px 14px;display:flex;gap:9px">
+        <div class="btn out" style="flex:1;height:48px"><svg><use href="#ic-pause"/></svg>Pause</div>
+        <div class="btn" style="flex:1;height:48px"><svg><use href="#ic-skip"/></svg>Skip</div>
+      </div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">09</span><span class="nm">Rest clock</span><span class="ds">Scoreboard · shows what's next</span></figcaption>
+</figure>
+
+<!-- 06 LIBRARY -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F3EDDF;--pd:#1A1711"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">200+ exercises</div><div class="t">Library</div></div><div class="iconbtn" style="background:var(--red);color:#fff"><svg><use href="#ic-plus"/></svg></div></div>
+
+      <div style="display:flex;align-items:center;gap:9px;border-radius:13px;background:var(--card);box-shadow:var(--sh-sm);padding:11px 13px"><svg style="width:15px;height:15px;color:var(--ink-3)"><use href="#ic-search"/></svg><span class="dim3" style="font-weight:500">Search exercises</span></div>
+
+      <div class="row" style="gap:7px;margin-top:11px;overflow:hidden"><span class="chip on">All</span><span class="chip">Chest</span><span class="chip">Back</span><span class="chip">Barbell</span></div>
+
+      <div class="kik" style="margin:15px 2px 8px;color:var(--ink-2)">Chest</div>
+      <div class="card" style="padding:11px 12px"><div class="btw"><div><div style="font-weight:600;font-size:13.5px">Bench Press</div><div class="kik" style="margin-top:3px">Barbell · Compound</div></div><div class="row" style="gap:5px"><span class="mtag mc-chest">Chest</span><span class="mtag soft-chest">Tri 0.5×</span></div></div></div>
+      <div class="card" style="padding:11px 12px"><div class="btw"><div><div style="font-weight:600;font-size:13.5px">Incline DB Press</div><div class="kik" style="margin-top:3px">Dumbbell · Compound</div></div><span class="mtag mc-chest">Chest</span></div></div>
+      <div class="card" style="padding:11px 12px"><div class="btw"><div><div style="font-weight:600;font-size:13.5px">Push-Up</div><div class="kik" style="margin-top:3px">Bodyweight · ×0.65</div></div><span class="mtag mc-chest">Chest</span></div></div>
+
+      <div class="kik" style="margin:13px 2px 8px;color:var(--ink-2)">Your custom</div>
+      <div class="card" style="padding:11px 12px;border:1.5px dashed var(--line-2);box-shadow:none"><div class="btw"><div><div style="font-weight:600;font-size:13.5px">Landmine Press</div><div class="kik" style="margin-top:3px">Custom · primary set ✓</div></div><span class="mtag mc-sho">Delts</span></div></div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab on"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">10</span><span class="nm">Exercise library</span><span class="ds">Filters · fractional tags · custom</span></figcaption>
+</figure>
+
+<!-- 07 HISTORY -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#E2F0EB;--pd:#101B17"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">147 sessions</div><div class="t">History</div></div><div class="iconbtn"><svg><use href="#ic-cal"/></svg></div></div>
+
+      <div class="card">
+        <div class="btw" style="margin-bottom:10px"><span class="kik" style="color:var(--ink-2)">Activity</span><span class="kik">17 weeks</span></div>
+        <div id="heat" style="display:flex;gap:3px"></div>
+        <div class="row" style="gap:5px;margin-top:10px;justify-content:flex-end"><span class="kik">less</span><i style="width:9px;height:9px;border-radius:2px;background:var(--line-2)"></i><i style="width:9px;height:9px;border-radius:2px;background:#CADBCB"></i><i style="width:9px;height:9px;border-radius:2px;background:#9CC0A4"></i><i style="width:9px;height:9px;border-radius:2px;background:var(--red)"></i><span class="kik">more</span></div>
+      </div>
+
+      <div class="kik" style="margin:13px 2px 9px;color:var(--ink-2)">Recent</div>
+      <div class="card" style="padding:13px">
+        <div class="btw"><div><div style="font-weight:600;font-size:13.5px">Push day</div><div class="kik" style="margin-top:3px">Yesterday · 58 min</div></div><span class="mtag" style="background:var(--green)"><svg style="width:10px;height:10px;vertical-align:-1px"><use href="#ic-trophy"/></svg> 2 PR</span></div>
+        <div class="perf"></div>
+        <div class="btw"><span class="num dim" style="font-size:11.5px">12.4k kg · 24 sets</span><span class="chip" style="padding:5px 12px;color:var(--red)">Repeat</span></div>
+      </div>
+      <div class="card" style="padding:13px">
+        <div class="btw"><div><div style="font-weight:600;font-size:13.5px">Leg day</div><div class="kik" style="margin-top:3px">3 days ago · 51 min</div></div></div>
+        <div class="perf"></div>
+        <div class="btw"><span class="num dim" style="font-size:11.5px">15.1k kg · 21 sets</span><span class="chip" style="padding:5px 12px;color:var(--red)">Repeat</span></div>
+      </div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab on"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">11</span><span class="nm">History</span><span class="ds">Activity heatmap · repeat-last</span></figcaption>
+</figure>
+
+<!-- 08 SUMMARY -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#E8F3E6;--pd:#121C16"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll" style="padding-top:8px">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#4E775F;padding:18px 14px;text-align:center;position:relative;overflow:hidden"><div class="rays" style="--ry:44%;opacity:.55"></div><div style="position:relative"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(150deg,#E8C36B,#CC9B66);display:grid;place-items:center;margin:0 auto 10px;box-shadow:0 8px 20px -8px rgba(0,0,0,.45);animation:popScale .7s cubic-bezier(.34,1.4,.5,1) both"><svg style="width:26px;height:26px;color:#fff"><use href="#ic-trophy"/></svg></div><div class="title" style="font-size:28px;color:#fff">Good lift!</div><div style="font-weight:600;font-size:11.5px;color:#d9f3e1;margin-top:4px">Push day · 2 PRs today</div></div></div>
+        <div style="padding:14px">
+          <div class="row" style="text-align:center">
+            <div style="flex:1"><div class="bign" style="font-size:23px">58<span class="dim3" style="font-size:11px;font-weight:700">m</span></div><div class="kik" style="margin-top:3px">time</div></div>
+            <div style="width:1px;height:30px;background:var(--line)"></div>
+            <div style="flex:1"><div class="bign" style="font-size:23px">12.4<span class="dim3" style="font-size:11px;font-weight:700">k</span></div><div class="kik" style="margin-top:3px">volume</div></div>
+            <div style="width:1px;height:30px;background:var(--line)"></div>
+            <div style="flex:1"><div class="bign" style="font-size:23px">24</div><div class="kik" style="margin-top:3px">sets</div></div>
+          </div>
+          <div class="perf"></div>
+          <div class="row" style="gap:8px;margin-bottom:9px"><svg style="width:16px;height:16px;color:var(--match)"><use href="#ic-trophy"/></svg><span style="font-weight:700;font-size:13px">2 personal records</span></div>
+          <div class="btw" style="padding:3px 0"><span style="font-weight:500;font-size:12.5px">Bench · est 1RM</span><span class="num" style="font-weight:800;color:var(--green)">102.5 kg</span></div>
+          <div class="hair"></div>
+          <div class="btw" style="padding:3px 0"><span style="font-weight:500;font-size:12.5px">OHP · heaviest</span><span class="num" style="font-weight:800;color:var(--green)">52.5 kg</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;padding:13px">
+        <div class="row" style="gap:8px"><svg style="width:15px;height:15px;color:var(--red)"><use href="#ic-swap"/></svg><span style="font-weight:500;font-size:12.5px">Save the Cable Fly swap to Routine A?</span></div>
+        <div class="row" style="gap:8px;margin-top:10px"><span class="chip" style="flex:1;justify-content:center;display:flex">This time</span><span class="chip on" style="flex:1;justify-content:center;display:flex">Save to routine</span></div>
+      </div>
+    </div></div>
+    <div style="padding:8px 16px 14px"><div class="btn ink"><svg><use href="#ic-share"/></svg>Done</div></div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">12</span><span class="nm">Session summary</span><span class="ds">PRs revealed · save-to-routine</span></figcaption>
+</figure>
+
+<!-- 09 PROGRESS -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#E9EDF6;--pd:#13151F"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">Progress</div><div class="t">Bench Press</div></div><div class="iconbtn"><svg><use href="#ic-dots"/></svg></div></div>
+
+      <div class="row" style="gap:7px;margin-bottom:11px"><span class="chip on">est 1RM</span><span class="chip">Top set</span><span class="chip">Volume</span></div>
+
+      <div class="card" style="padding:14px 13px 10px">
+        <div class="btw" style="margin-bottom:6px;align-items:flex-end"><div><div class="bign" style="font-size:32px;color:var(--green)">102.5<span class="dim3" style="font-size:13px;font-weight:700"> kg</span></div><div class="kik" style="margin-top:3px">est 1RM · ▲ 9% over 8 wk</div></div><span class="chip" style="padding:5px 10px">8 wk</span></div>
+        <svg viewBox="0 0 292 138" width="100%" height="116" style="overflow:visible">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--red)" stop-opacity=".16"/><stop offset="1" stop-color="var(--red)" stop-opacity="0"/></linearGradient></defs>
+          <line x1="0" y1="28" x2="292" y2="28" stroke="var(--line)" stroke-width="1"/><line x1="0" y1="74" x2="292" y2="74" stroke="var(--line)" stroke-width="1"/><line x1="0" y1="118" x2="292" y2="118" stroke="var(--line-2)" stroke-width="1.5"/>
+          <path d="M14,114 56,106 98,108 130,93 168,88 205,82 242,72 280,60 L280,118 14,118 Z" fill="url(#g)"/>
+          <polyline points="14,114 56,106 98,108 130,93 168,88 205,82 242,72 280,60" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="280" cy="60" r="5" fill="var(--green)" stroke="#fff" stroke-width="2.5"/>
+          <text x="2" y="26" fill="var(--ink-3)" font-size="8" font-family="Hanken Grotesk" font-weight="600">105</text>
+          <text x="2" y="72" fill="var(--ink-3)" font-size="8" font-family="Hanken Grotesk" font-weight="600">90</text>
+        </svg>
+        <div class="btw" style="padding:5px 4px 0"><span class="kik">W1</span><span class="kik">W4</span><span class="kik">W8</span></div>
+      </div>
+
+      <div class="card" style="margin-top:10px;padding:13px">
+        <div class="btw" style="margin-bottom:10px"><span class="kik" style="color:var(--ink-2)">Weekly volume</span><span class="kik">kg</span></div>
+        <div style="display:flex;gap:6px;align-items:flex-end;height:46px">
+          <i style="flex:1;height:45%;background:var(--line-2);border-radius:3px"></i><i style="flex:1;height:62%;background:var(--line-2);border-radius:3px"></i><i style="flex:1;height:55%;background:var(--line-2);border-radius:3px"></i><i style="flex:1;height:80%;background:var(--line-2);border-radius:3px"></i><i style="flex:1;height:68%;background:var(--red);border-radius:3px"></i><i style="flex:1;height:94%;background:var(--red);border-radius:3px"></i>
+        </div>
+      </div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab on"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">13</span><span class="nm">Progress charts</span><span class="ds">Epley e1RM default · volume</span></figcaption>
+</figure>
+
+<!-- 10 MUSCLE -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F7EBED;--pd:#1D1416"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">This month · fractional sets</div><div class="t">Muscle balance</div></div><div class="iconbtn"><svg><use href="#ic-dots"/></svg></div></div>
+
+      <div class="card" style="display:flex;gap:10px;align-items:center;padding:13px">
+        <svg width="118" height="118" viewBox="0 0 120 120" style="flex:none">
+          <polygon points="60,26 90,42 90,78 60,94 30,78 30,42" fill="none" stroke="var(--line-2)" stroke-width="1.5"/>
+          <polygon points="60,16 94,37 94,83 60,104 26,83 26,37" fill="none" stroke="var(--line)" stroke-width="1.5"/>
+          <polygon points="60,30 82,48 78,74 60,82 31,76 42,47" fill="rgba(95,139,115,.14)" stroke="var(--red)" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="60" cy="30" r="3.4" fill="var(--m-chest)"/><circle cx="82" cy="48" r="3.4" fill="var(--m-sho)"/><circle cx="78" cy="74" r="3.4" fill="var(--m-arms)"/><circle cx="60" cy="82" r="3.4" fill="var(--m-core)"/><circle cx="31" cy="76" r="3.4" fill="var(--m-legs)"/><circle cx="42" cy="47" r="3.4" fill="var(--m-back)"/>
+        </svg>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-legs)"></i><span style="font-weight:500;font-size:12px">Legs</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px">24%</span></div>
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-chest)"></i><span style="font-weight:500;font-size:12px">Chest</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px">22%</span></div>
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-back)"></i><span style="font-weight:500;font-size:12px">Back</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px">20%</span></div>
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-sho)"></i><span style="font-weight:500;font-size:12px">Delts</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px">14%</span></div>
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-arms)"></i><span style="font-weight:500;font-size:12px">Arms</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px">12%</span></div>
+          <div class="row"><i style="width:10px;height:10px;border-radius:3px;background:var(--m-core)"></i><span style="font-weight:500;font-size:12px">Core</span><span class="num" style="margin-left:auto;font-weight:700;font-size:12px;color:var(--red)">8%</span></div>
+        </div>
+      </div>
+
+      <div class="kik" style="margin:13px 2px 9px;color:var(--ink-2)">Strength · best est 1RM</div>
+      <div class="card" style="padding:11px 12px"><div class="btw"><div class="row" style="gap:10px"><i style="width:8px;height:24px;border-radius:3px;background:var(--m-chest)"></i><span style="font-weight:600;font-size:13.5px">Chest</span></div><div class="row" style="gap:8px"><span class="num" style="font-weight:800">102.5 kg</span><span style="color:var(--green);font-weight:700">▲</span></div></div></div>
+      <div class="card" style="padding:11px 12px"><div class="btw"><div class="row" style="gap:10px"><i style="width:8px;height:24px;border-radius:3px;background:var(--m-legs)"></i><span style="font-weight:600;font-size:13.5px">Legs</span></div><div class="row" style="gap:8px"><span class="num" style="font-weight:800">160 kg</span><span class="dim3" style="font-weight:700">—</span></div></div></div>
+
+      <div class="card" style="margin-top:10px;padding:0;overflow:hidden;display:flex;align-items:stretch"><span style="width:5px;background:var(--m-core)"></span><div style="padding:12px 13px;font-weight:500;font-size:12.5px">Core volume low this month — add a finisher.</div></div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab on"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">14</span><span class="nm">Muscle balance</span><span class="ds">Radar · per-muscle strength</span></figcaption>
+</figure>
+
+<!-- 11 BADGES -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F6EED7;--pd:#1C1810"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="appbar"><div style="flex:1"><div class="kik">28 earned</div><div class="t">Achievements</div></div><div class="iconbtn"><svg><use href="#ic-share"/></svg></div></div>
+
+      <div class="card" style="padding:14px">
+        <div class="row" style="gap:12px"><div style="width:46px;height:46px;border-radius:16px;background:var(--red);display:grid;place-items:center;flex:none;box-shadow:0 8px 18px -8px rgba(95,139,115,.7)"><svg style="width:24px;height:24px;color:#fff"><use href="#ic-trophy"/></svg></div><div style="flex:1"><div style="font-weight:700;font-size:14px">50 Workouts</div><div class="kik" style="margin-top:3px">3 more to unlock · milestone</div></div></div>
+        <div style="height:9px;border-radius:5px;background:var(--line-2);margin-top:12px"><div style="width:84%;height:100%;border-radius:5px;background:var(--red)"></div></div>
+        <div class="btw" style="margin-top:6px"><span class="num" style="font-weight:700;font-size:11px">47 / 50</span><span class="kik">process &gt; outcome</span></div>
+      </div>
+
+      <div class="kik" style="margin:14px 2px 10px;color:var(--ink-2)">Earned</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div style="text-align:center"><div style="aspect-ratio:1;border-radius:15px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center"><svg style="width:23px;height:23px;color:var(--amber)"><use href="#ic-trophy"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">First win</div></div>
+        <div style="text-align:center"><div style="aspect-ratio:1;border-radius:15px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center"><svg style="width:23px;height:23px;color:var(--warm)"><use href="#ic-flame"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">5-wk streak</div></div>
+        <div style="text-align:center"><div style="aspect-ratio:1;border-radius:15px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center"><svg style="width:23px;height:23px;color:var(--green)"><use href="#ic-bolt"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">100kg club</div></div>
+        <div style="text-align:center"><div style="aspect-ratio:1;border-radius:15px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center"><svg style="width:22px;height:22px;color:var(--blue)"><use href="#ic-dumbbell"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">Coverage</div></div>
+        <div style="text-align:center"><div style="aspect-ratio:1;border-radius:15px;background:var(--card);box-shadow:var(--sh-sm);display:grid;place-items:center"><svg style="width:22px;height:22px;color:var(--m-core)"><use href="#ic-trophy"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">25 lifts</div></div>
+        <div style="text-align:center;opacity:.4"><div style="aspect-ratio:1;border-radius:15px;background:var(--card-2);border:1.5px dashed var(--line-2);display:grid;place-items:center"><svg style="width:21px;height:21px;color:var(--ink-3)"><use href="#ic-trophy"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">1M kg</div></div>
+        <div style="text-align:center;opacity:.4"><div style="aspect-ratio:1;border-radius:15px;background:var(--card-2);border:1.5px dashed var(--line-2);display:grid;place-items:center"><svg style="width:21px;height:21px;color:var(--ink-3)"><use href="#ic-flame"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">12-wk</div></div>
+        <div style="text-align:center;opacity:.4"><div style="aspect-ratio:1;border-radius:15px;background:var(--card-2);border:1.5px dashed var(--line-2);display:grid;place-items:center"><svg style="width:21px;height:21px;color:var(--ink-3)"><use href="#ic-bolt"/></svg></div><div class="kik" style="margin-top:6px;font-size:8.5px">140kg</div></div>
+      </div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab on"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">15</span><span class="nm">Badges</span><span class="ds">Next-attainable first · process &gt; outcome</span></figcaption>
+</figure>
+
+<!-- 12 WRAPPED -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F0E9F5;--pd:#18141C"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body" style="padding:0">
+      <div class="scroll" style="padding-top:12px">
+        <div class="btw"><span style="font-weight:700;letter-spacing:.18em;font-size:11px;color:var(--red)">MARCH · WRAPPED</span><svg style="width:18px;height:18px;color:var(--red)"><use href="#ic-bolt"/></svg></div>
+
+        <div style="margin-top:22px">
+          <div style="font-weight:600;font-size:12.5px;color:var(--ink-2)">You showed up</div>
+          <div class="bign" style="font-size:90px;line-height:.8;margin-top:5px;color:var(--red)">18×</div>
+          <div style="font-weight:500;font-size:13.5px;color:var(--ink-2);margin-top:7px">workouts — your best month yet.</div>
+        </div>
+
+        <div class="row" style="gap:10px;margin-top:22px">
+          <div class="card" style="flex:1;padding:13px"><div class="bign" style="font-size:26px">247<span style="font-size:13px;font-weight:700">k</span></div><div class="kik" style="margin-top:5px">kg lifted</div></div>
+          <div class="card" style="flex:1;padding:13px"><div class="bign" style="font-size:26px;color:var(--red)">6</div><div class="kik" style="margin-top:5px">new PRs</div></div>
+        </div>
+
+        <div class="card" style="margin-top:10px;padding:13px">
+          <div class="btw" style="margin-bottom:8px"><span class="kik" style="color:var(--ink-2)">Top muscle group</span><span class="mtag mc-back">Back</span></div>
+          <div class="row" style="gap:8px"><svg style="width:17px;height:17px;color:var(--warm)"><use href="#ic-flame"/></svg><span style="font-weight:500;font-size:13px">Streak held all 4 weeks</span></div>
+        </div>
+      </div>
+      <div style="padding:8px 16px 14px"><div class="btn"><svg><use href="#ic-share"/></svg>Share your month</div></div>
+    </div>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">16</span><span class="nm">Monthly Wrapped</span><span class="ds">Once a month · shareable</span></figcaption>
+</figure>
+
+<!-- 13 PROFILE -->
+<figure class="cell">
+  <div class="device"><div class="screen pgbg" style="--pl:#F0ECE3;--pd:#191712"><div class="island"></div>
+    <div class="sbar"><span>9:41</span><span><svg style="width:14px;height:14px"><use href="#ic-bolt"/></svg></span></div>
+    <div class="body"><div class="scroll">
+      <div class="row" style="gap:13px;padding:6px 2px 14px">
+        <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(150deg,var(--red),#456A55);display:grid;place-items:center;color:#fff;font-family:var(--disp);font-weight:800;font-size:26px;flex:none">S</div>
+        <div><div class="title" style="font-size:23px">Sam</div><div class="num dim" style="font-size:11.5px;margin-top:2px">147 workouts · since Jan '25</div></div>
+      </div>
+
+      <div class="row" style="gap:9px">
+        <div class="card" style="flex:1;text-align:center;padding:12px"><svg style="width:17px;height:17px;color:var(--red);margin-bottom:4px"><use href="#ic-flame"/></svg><div class="bign" style="font-size:21px">5</div><div class="kik" style="margin-top:1px">wk streak</div></div>
+        <div class="card" style="flex:1;text-align:center;padding:12px"><svg style="width:17px;height:17px;color:var(--amber);margin-bottom:4px"><use href="#ic-trophy"/></svg><div class="bign" style="font-size:21px">28</div><div class="kik" style="margin-top:1px">badges</div></div>
+        <div class="card" style="flex:1;text-align:center;padding:12px"><svg style="width:17px;height:17px;color:var(--blue);margin-bottom:4px"><use href="#ic-dumbbell"/></svg><div class="bign" style="font-size:21px">1.2<span style="font-size:11px;font-weight:700">M</span></div><div class="kik" style="margin-top:1px">kg total</div></div>
+      </div>
+
+      <div class="kik" style="margin:15px 2px 8px;color:var(--ink-2)">Settings</div>
+      <div class="card" style="padding:2px 14px">
+        <div class="btw" style="padding:11px 0"><span style="font-weight:500;font-size:13.5px">Weekly target</span><span class="num dim" style="font-size:12.5px">3 / week</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><span style="font-weight:500;font-size:13.5px">Reminders</span><div style="width:44px;height:26px;border-radius:14px;background:var(--green);position:relative"><i style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></i></div></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><span style="font-weight:500;font-size:13.5px">Units</span><span class="num dim" style="font-size:12.5px">kg</span></div>
+      </div>
+
+      <div class="kik" style="margin:13px 2px 8px;color:var(--ink-2)">Backup</div>
+      <div class="card" style="padding:2px 14px">
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:9px"><svg style="width:15px;height:15px;color:var(--green)"><use href="#ic-check"/></svg><span style="font-weight:500;font-size:13.5px">Auto backup</span></div><span class="kik">2 days ago</span></div>
+        <div class="hair"></div>
+        <div class="btw" style="padding:11px 0"><div class="row" style="gap:9px"><svg style="width:15px;height:15px;color:var(--ink-2)"><use href="#ic-down"/></svg><span style="font-weight:500;font-size:13.5px">Export data</span></div><svg style="width:15px;height:15px;color:var(--ink-3)"><use href="#ic-chev"/></svg></div>
+      </div>
+    </div></div>
+    <nav class="tabs"><a class="tab"><svg><use href="#ic-home"/></svg><span>Home</span></a><a class="tab"><svg><use href="#ic-dumbbell"/></svg><span>Train</span></a><a class="tab"><svg><use href="#ic-clock"/></svg><span>History</span></a><a class="tab"><svg><use href="#ic-chart"/></svg><span>Stats</span></a><a class="tab on"><svg><use href="#ic-user"/></svg><span>You</span></a></nav>
+    <div class="hbar"></div>
+  </div></div>
+  <figcaption class="cap"><span class="n">17</span><span class="nm">Profile &amp; backup</span><span class="ds">Lifetime stats · kg-only · local</span></figcaption>
+</figure>
+
+</main>
+
+<!-- COLOPHON -->
+<footer class="colo">
+  <p><span class="mn">Kasrat</span> — v1 interface, "Meet Day" identity executed cleanly. The progress cue is the platform's referee lights, weights are coded by real bumper-plate colors, the plate calculator renders an actual loaded bar, and the live set reads off a scoreboard. Set in Archivo + Hanken Grotesk on warm paper, soft cards, hairline rules.</p>
+  <div class="taxo">
+    <div class="x"><i style="background:var(--m-chest)"></i>Chest</div>
+    <div class="x"><i style="background:var(--m-back)"></i>Back</div>
+    <div class="x"><i style="background:var(--m-sho)"></i>Shoulders</div>
+    <div class="x"><i style="background:var(--m-arms)"></i>Arms</div>
+    <div class="x"><i style="background:var(--m-legs)"></i>Legs</div>
+    <div class="x"><i style="background:var(--m-core)"></i>Core</div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var host=document.getElementById('heat'); if(!host) return;
+  var lv=['var(--line-2)','#CADBCB','#9CC0A4','var(--red)'];
+  for(var w=0;w<17;w++){
+    var col=document.createElement('div'); col.style.cssText='display:flex;flex-direction:column;gap:3px';
+    for(var d=0;d<7;d++){
+      var sq=document.createElement('i'); sq.style.cssText='width:9px;height:9px;border-radius:2px';
+      var r=Math.random();
+      var l=(d===2||d===6)?(r<0.7?0:1):(r<0.2?0:r<0.46?1:r<0.76?2:3);
+      if(w>14&&d>4) l=0;
+      sq.style.background=lv[l]; col.appendChild(sq);
+    }
+    host.appendChild(col);
+  }
+})();
+</script>
+<script>
+(function(){
+  // streak flame flicker
+  document.querySelectorAll('use').forEach(function(u){
+    if(u.getAttribute('href')==='#ic-flame'){var sv=u.closest('svg'); if(sv){sv.style.transformOrigin='center';sv.style.animation='flicker 2.6s ease-in-out infinite';}}
+  });
+  // radar grow-in
+  document.querySelectorAll('polygon').forEach(function(pg){
+    var f=pg.getAttribute('fill')||''; if(f.indexOf('rgba')===0){pg.style.transformBox='fill-box';pg.style.transformOrigin='center';pg.style.animation='popScale 1s cubic-bezier(.34,1.3,.5,1) .4s both';}
+  });
+  // progress line draws itself in
+  var pl=document.querySelector('polyline');
+  if(pl&&pl.getTotalLength){var L=pl.getTotalLength();pl.style.strokeDasharray=L;pl.style.strokeDashoffset=L;pl.getBoundingClientRect();pl.style.transition='stroke-dashoffset 1.6s cubic-bezier(.4,0,.15,1) .5s';requestAnimationFrame(function(){pl.style.strokeDashoffset='0';});}
+  // heatmap squares stagger in
+  document.querySelectorAll('#heat i').forEach(function(el,i){el.style.animation='sqIn .5s ease both';el.style.animationDelay=(0.35+i*0.006)+'s';});
+})();
+</script>
+<script>
+(function(){
+  function setTheme(t){document.body.dataset.theme=t;document.querySelectorAll('.tsw').forEach(function(b){b.classList.toggle('on',b.dataset.t===t);});}
+  document.querySelectorAll('.tsw').forEach(function(b){b.addEventListener('click',function(){setTheme(b.dataset.t);});});
+})();
+</script>
+</body>
+</html>
