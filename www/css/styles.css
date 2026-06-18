@@ -48,7 +48,7 @@ body {
 .screen.active {
   opacity: 1; pointer-events: all; transform: none;
 }
-.screen.no-tabs { bottom: 0; }
+.screen.no-tabs { bottom: 0; z-index: 205; }
 .screen.slide-up { transform: translateY(100%); }
 .screen.slide-up.active { transform: translateY(0); }
 
@@ -159,6 +159,25 @@ body {
 .chip:active { transform: scale(.97); }
 .chip.on { background: var(--ink); color: #fff; box-shadow: none; }
 .chip.red { background: var(--red); color: #fff; box-shadow: none; }
+
+/* inline set-type buttons (W / N / D / F) — live on the dark scoreboard */
+.sttype {
+  font-family: var(--disp); font-weight: 800; font-size: 12px;
+  width: 30px; height: 26px; border-radius: 8px;
+  border: 1.5px solid #4a453c; background: transparent; color: #9B9486;
+  display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent; transition: all .15s ease;
+}
+.sttype.on { background: var(--led); border-color: var(--led); color: #1B1813; }
+
+/* ── PER-SCREEN BACKGROUND TINTS ── */
+#screen-home { background: #F2EEE6; }
+#screen-train, #screen-routines, #screen-routine-editor, #screen-library { background: #F5EFD6; }
+#screen-history { background: #E2F0EB; }
+#screen-stats, #screen-progress, #screen-muscle-balance { background: #E9EDF6; }
+#screen-profile, #screen-badges { background: #F0ECE3; }
+#screen-workout-logger, #screen-session-summary { background: #E6EEF3; }
+#rest-timer-screen { background: #ECE8F4; }
 
 .mtag {
   font-family: var(--ui); font-weight: 700; font-size: 9.5px;

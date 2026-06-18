@@ -1,9 +1,35 @@
 /* ── KASRAT APP ── */
 const App = (() => {
-  const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-  const DAY_LABELS = { MON:'Mon', TUE:'Tue', WED:'Wed', THU:'Thu', FRI:'Fri', SAT:'Sat', SUN:'Sun' };
   const MUSCLE_LABELS = { chest:'Chest', back:'Back', shoulders:'Delts', arms:'Arms', legs:'Legs', core:'Core' };
   const MUSCLE_CLS = { chest:'chest', back:'back', shoulders:'sho', arms:'arms', legs:'legs', core:'core' };
+
+  /* Routine sections (fixed order). Each routine exercise carries a `section`. */
+  const SECTIONS = ['Warm Up', 'Mobility', 'Primary', 'Secondary', 'Static Stretch'];
+  const SECTION_COLOR = { 'Warm Up':'var(--m-sho)', 'Mobility':'var(--m-arms)', 'Primary':'var(--red)', 'Secondary':'var(--m-back)', 'Static Stretch':'var(--m-legs)' };
+  function sectionOf(re) { return SECTIONS.includes(re.section) ? re.section : 'Primary'; }
+  function sectionOrder(re) { return SECTIONS.indexOf(sectionOf(re)); }
+
+  /* Set types — inline-selectable, default Normal. */
+  const SET_TYPES = [
+    { k:'warmup', label:'W', color:'var(--amber)' },
+    { k:'normal', label:'N', color:'var(--ink)' },
+    { k:'drop', label:'D', color:'var(--blue)' },
+    { k:'failure', label:'F', color:'var(--red)' },
+  ];
+  function stMeta(t) { return SET_TYPES.find(x => x.k === t) || SET_TYPES[1]; }
+  // Set-number column: a letter (W/D/F) for special types, otherwise the number.
+  function setLabel(set, si) {
+    return (set.setType && set.setType !== 'normal') ? stMeta(set.setType).label : (si + 1);
+  }
+  function setLabelColor(set) {
+    return (set.setType && set.setType !== 'normal') ? stMeta(set.setType).color : '';
+  }
+  function setTypePicker(set, si) {
+    return `<div class="row" style="gap:5px;padding:8px 4px 0">
+      ${SET_TYPES.map(t => `<button class="sttype${(set.setType||'normal')===t.k?' on':''}" data-action="set-type-pick" data-si="${si}" data-type="${t.k}">${t.label}</button>`).join('')}
+      <span class="kik" style="margin-left:auto;align-self:center;color:#8C8678">type</span>
+    </div>`;
+  }
 
   let screenStack = [];
   let activeTab = 'home';
@@ -14,6 +40,12 @@ const App = (() => {
   /* ────────────────── ICONS ────────────────── */
   function ic(id, size = '') {
     return `<svg${size ? ` style="width:${size};height:${size}"` : ''}><use href="#ic-${id}"/></svg>`;
+  }
+
+  /* ────────────────── HTML ESCAPE ────────────────── */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   }
 
   /* ────────────────── TIME HELPERS ────────────────── */
@@ -36,7 +68,6 @@ const App = (() => {
     if (h < 17) return 'Afternoon';
     return 'Evening';
   }
-  function todayKey() { return DAYS[new Date().getDay()]; }
   function todayLabel() {
     const labels = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     return labels[new Date().getDay()];
@@ -130,7 +161,6 @@ const App = (() => {
       history: renderHistory,
       stats: renderStats,
       profile: renderProfile,
-      schedule: renderSchedule,
       routines: renderRoutines,
       'routine-editor': renderRoutineEditor,
       library: renderLibrary,
@@ -165,16 +195,15 @@ const App = (() => {
     const user = Storage.getUser();
     const name = user ? user.name : '';
     const streak = Storage.getStreak();
-    const schedule = Storage.getSchedule();
-    const todayRoutineId = schedule[todayKey()];
-    const todayRoutine = todayRoutineId ? Storage.getRoutineById(todayRoutineId) : null;
+    const routines = Storage.getRoutines();
     const weekVol = Storage.computeWeeklyVolume(1);
     const latestPR = Storage.getLatestPR();
     const muscleVol = Storage.getMuscleVolume(4);
     const workouts = Storage.getWorkouts();
     const target = user ? (user.weeklyTargetWorkouts || 3) : 3;
 
-    const hasActiveWorkout = !!Storage.getActiveWorkout();
+    const active = Storage.getActiveWorkout();
+    const hasActiveWorkout = !!active && (active.exercises || []).length > 0;
 
     const muscleEntries = Object.entries(muscleVol).sort((a,b) => a[1] - b[1]);
     const lowMuscle = muscleEntries[0];
@@ -197,27 +226,31 @@ const App = (() => {
         </div>
       </div>`;
 
-    const todayCard = todayRoutine ? `
-      <div class="kik" style="margin:12px 2px 8px;color:var(--ink-2)">Today's session</div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:14px 14px 12px">
-          <div class="title" style="font-size:18px">${todayRoutine.name}</div>
-          <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap">
-            ${(todayRoutine.exercises||[]).slice(0,3).map(e=>{
-              const ex = Storage.getExerciseById(e.exerciseId);
-              if (!ex) return '';
-              return `<span class="mtag mc-${MUSCLE_CLS[ex.primaryMuscleGroup]||'back'}">${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</span>`;
-            }).join('')}
-            <span class="kik" style="margin-left:auto">${(todayRoutine.exercises||[]).length} lifts</span>
+    const muscleTags = (r) => (r.exercises||[]).slice(0,3).map(e=>{
+      const ex = Storage.getExerciseById(e.exerciseId);
+      if (!ex) return '';
+      return `<span class="mtag mc-${MUSCLE_CLS[ex.primaryMuscleGroup]||'back'}">${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</span>`;
+    }).join('');
+
+    const todayCard = routines.length ? `
+      <div class="kik" style="margin:12px 2px 8px;color:var(--ink-2)">Start a workout</div>
+      ${routines.slice(0,3).map(r => `
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+        <div style="padding:13px 14px 11px">
+          <div class="title" style="font-size:17px">${esc(r.name)}</div>
+          <div class="row" style="gap:6px;margin-top:9px;flex-wrap:wrap">
+            ${muscleTags(r)}
+            <span class="kik" style="margin-left:auto">${(r.exercises||[]).length} lifts</span>
           </div>
         </div>
-        <button class="btn" style="border-radius:0;height:48px" data-action="start-routine" data-id="${todayRoutine.id}">${ic('bolt')}Start workout</button>
-      </div>` : `
-      <div class="kik" style="margin:12px 2px 8px;color:var(--ink-2)">Today's session</div>
+        <button class="btn" style="border-radius:0;height:46px" data-action="start-routine" data-id="${r.id}">${ic('bolt')}Start</button>
+      </div>`).join('')}
+      <button class="btn out" style="margin-top:2px" data-action="pick-routine">${ic('dumbbell')}Start any · empty workout</button>` : `
+      <div class="kik" style="margin:12px 2px 8px;color:var(--ink-2)">Start a workout</div>
       <div class="card" style="text-align:center;padding:20px 16px">
-        <div class="kik" style="margin-bottom:8px">${todayLabel()}</div>
-        <div style="font-weight:600;font-size:14px;color:var(--ink-2)">Rest day — or go for it</div>
-        <button class="btn" style="margin-top:12px" data-action="pick-routine">${ic('plus')}Start any workout</button>
+        <div style="font-weight:600;font-size:14px;color:var(--ink-2)">No routines yet — build one to begin</div>
+        <button class="btn" style="margin-top:12px" data-action="new-routine">${ic('plus')}New routine</button>
+        <button class="btn out" style="margin-top:8px" data-action="pick-routine">${ic('dumbbell')}Start empty workout</button>
       </div>`;
 
     const statsRow = `
@@ -229,7 +262,7 @@ const App = (() => {
         ${latestPR ? `
         <div class="card" style="flex:1;margin:0;padding:13px">
           <div class="kik">Latest PR</div>
-          <div class="row" style="gap:5px;margin-top:6px">${ic('trophy','14px')}<span style="font-weight:700;font-size:11.5px">${latestPR.exerciseName.split(' ').slice(0,2).join(' ')}</span></div>
+          <div class="row" style="gap:5px;margin-top:6px">${ic('trophy','14px')}<span style="font-weight:700;font-size:11.5px">${esc(latestPR.exerciseName.split(' ').slice(0,2).join(' '))}</span></div>
           <div class="bign" style="font-size:22px;margin-top:4px;color:var(--green)">${latestPR.value}</div>
           <div class="kik" style="margin-top:3px">est · ${relTime(latestPR.achievedAt)}</div>
         </div>` : `
@@ -259,8 +292,8 @@ const App = (() => {
       <div class="body"><div class="scroll">
         <div class="btw" style="padding:2px 0 14px">
           <div>
-            <div class="kik">${todayLabel()} · ${todayRoutine ? todayRoutine.name : 'Rest day'}</div>
-            <div class="title" style="font-size:24px;margin-top:5px">${timeGreeting()}${name ? ', ' + name : ''}</div>
+            <div class="kik">${todayLabel()} · Ready when you are</div>
+            <div class="title" style="font-size:24px;margin-top:5px">${timeGreeting()}${name ? ', ' + esc(name) : ''}</div>
           </div>
           <button class="iconbtn" data-action="go-notifications">${ic('bell')}</button>
         </div>
@@ -280,7 +313,7 @@ const App = (() => {
       <div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer" data-action="open-routine" data-id="${r.id}">
         <div class="mark" style="width:40px;height:40px;border-radius:12px">${ic('dumbbell')}</div>
         <div style="flex:1">
-          <div style="font-weight:700;font-size:14px">${r.name}</div>
+          <div style="font-weight:700;font-size:14px">${esc(r.name)}</div>
           <div class="kik" style="margin-top:3px">${(r.exercises||[]).length} exercises</div>
         </div>
         ${ic('chev')}
@@ -296,7 +329,6 @@ const App = (() => {
       <div class="body"><div class="scroll">
         <div class="appbar">
           <div style="flex:1"><div class="kik">Your training</div><div class="t">Workout</div></div>
-          <button class="iconbtn" data-action="go-schedule">${ic('cal')}</button>
         </div>
         <div class="row" style="gap:8px;margin-bottom:14px">
           <button class="btn" style="flex:1" data-action="start-quick">${ic('bolt')}Quick start</button>
@@ -320,7 +352,7 @@ const App = (() => {
       return `
         <div class="card" style="padding:13px;cursor:pointer" data-action="view-workout" data-id="${w.id}">
           <div class="btw">
-            <div><div style="font-weight:600;font-size:13.5px">${w.name || 'Workout'}</div><div class="kik" style="margin-top:3px">${relTime(w.startedAt)}${dur ? ' · ' + dur : ''}</div></div>
+            <div><div style="font-weight:600;font-size:13.5px">${esc(w.name || 'Workout')}</div><div class="kik" style="margin-top:3px">${relTime(w.startedAt)}${dur ? ' · ' + dur : ''}</div></div>
             ${(w.prs && w.prs.length) ? `<span class="mtag" style="background:var(--green)">${ic('trophy','10px')} ${w.prs.length} PR</span>` : ''}
           </div>
           <div class="perf"></div>
@@ -406,7 +438,7 @@ const App = (() => {
         <div class="card" style="padding:12px 13px;cursor:pointer" data-action="exercise-progress" data-id="${exId}">
           <div class="btw">
             <div>
-              <div style="font-weight:600;font-size:13.5px">${ex.name}</div>
+              <div style="font-weight:600;font-size:13.5px">${esc(ex.name)}</div>
               <div class="kik" style="margin-top:2px">${ex.category} · ${ex.equipment}</div>
             </div>
             <div style="text-align:right">
@@ -487,7 +519,7 @@ const App = (() => {
         <div class="row" style="gap:13px;padding:6px 2px 14px">
           <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(150deg,var(--red),#456A55);display:grid;place-items:center;color:#fff;font-family:var(--disp);font-weight:800;font-size:26px;flex:none">${initial}</div>
           <div>
-            <div class="title" style="font-size:23px">${name}</div>
+            <div class="title" style="font-size:23px">${esc(name)}</div>
             <div class="num dim" style="font-size:11.5px;margin-top:2px">${streak.totalCompletedWorkouts} workouts · member</div>
           </div>
         </div>
@@ -514,7 +546,7 @@ const App = (() => {
           <div class="hair"></div>
           <div class="btw" style="padding:11px 0;cursor:pointer" data-action="edit-name">
             <span style="font-weight:500;font-size:13.5px">Display name</span>
-            <span class="num dim" style="font-size:12.5px">${name} ${ic('chev','14px')}</span>
+            <span class="num dim" style="font-size:12.5px">${esc(name)} ${ic('chev','14px')}</span>
           </div>
         </div>
         <div class="kik" style="margin:13px 2px 8px;color:var(--ink-2)">Backup</div>
@@ -530,39 +562,6 @@ const App = (() => {
       </div></div>`;
   }
 
-  /* ────────────────── SCHEDULE ────────────────── */
-  function renderSchedule(el) {
-    const schedule = Storage.getSchedule();
-    const routines = Storage.getRoutines();
-    const dayOrder = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-    const todayK = todayKey();
-
-    const rows = dayOrder.map(day => {
-      const routineId = schedule[day];
-      const routine = routineId ? Storage.getRoutineById(routineId) : null;
-      const isToday = day === todayK;
-      return `
-        <div class="btw" style="padding:11px 0;cursor:pointer" data-action="assign-day" data-day="${day}">
-          <div class="row" style="gap:13px">
-            <span class="kik" style="width:28px${isToday ? ';color:var(--red)' : ''}">${DAY_LABELS[day]}</span>
-            <span style="font-weight:600;font-size:13.5px${!routine ? ';color:var(--ink-3)' : ''}">${routine ? routine.name : 'Rest'}</span>
-          </div>
-          ${routine ? (() => { const mg = (routine.exercises||[]).length ? (Storage.getExerciseById(routine.exercises[0].exerciseId)?.primaryMuscleGroup || 'back') : 'back'; return `<span class="mtag mc-${MUSCLE_CLS[mg]||'back'}">${MUSCLE_LABELS[mg]||'Training'}</span>`; })() : ic('rest','15px')}
-        </div>`;
-    }).join('<div class="hair"></div>');
-
-    el.innerHTML = `
-      ${sbar()}
-      <div class="body"><div class="scroll">
-        <div class="appbar">
-          <button class="iconbtn" data-action="back">${ic('back')}</button>
-          <div style="flex:1"><div class="kik">Schedule</div><div class="t">Your week</div></div>
-        </div>
-        <div class="card" style="padding:4px 14px">${rows}</div>
-        <div class="kik" style="text-align:center;margin-top:12px;color:var(--ink-3)">Schedule is a suggestion — lift any routine, any day.</div>
-      </div></div>`;
-  }
-
   /* ────────────────── ROUTINES ────────────────── */
   function renderRoutines(el) {
     renderTrain(el);
@@ -570,26 +569,55 @@ const App = (() => {
 
   let editingRoutineId = null;
   let editingRoutine = null;
+  let collapsedSections = {};  // section name -> true when collapsed (persists across re-renders)
 
   function renderRoutineEditor(el) {
     if (!editingRoutine) {
       editingRoutine = editingRoutineId ?
-        (Storage.getRoutineById(editingRoutineId) || { id: null, name: 'New Routine', exercises: [] }) :
-        { id: null, name: 'New Routine', exercises: [] };
+        (Storage.getRoutineById(editingRoutineId) || newRoutineDraft()) :
+        newRoutineDraft();
     }
-    const exList = (editingRoutine.exercises || []).map((re, i) => {
-      const ex = Storage.getExerciseById(re.exerciseId);
-      if (!ex) return '';
-      return `
-        <div style="display:flex;align-items:center;gap:10px;padding:9px">
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:13px">${ex.name}</div>
-            <div class="num dim" style="font-size:11px;margin-top:2px">${re.targetSets||3} × ${re.targetRepRange||'8–10'}${re.targetWeight ? ' · ' + re.targetWeight + ' kg' : ''}</div>
+
+    const sectionsHtml = SECTIONS.map(section => {
+      const collapsed = !!collapsedSections[section];
+      // Indices into editingRoutine.exercises that belong to this section.
+      const entries = (editingRoutine.exercises || [])
+        .map((re, i) => ({ re, i }))
+        .filter(({ re }) => sectionOf(re) === section);
+
+      const rows = entries.map(({ re, i }) => {
+        const ex = Storage.getExerciseById(re.exerciseId);
+        if (!ex) return '';
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px">
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px">${esc(ex.name)}</div>
+              <div class="num dim" style="font-size:11px;margin-top:2px">${re.targetSets||3} × ${re.targetRepRange||'8–10'}${re.targetWeight ? ' · ' + re.targetWeight + ' kg' : ''}</div>
+            </div>
+            <span class="mtag mc-${MUSCLE_CLS[ex.primaryMuscleGroup]||'back'}">${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</span>
+            <button class="iconbtn" style="width:28px;height:28px;box-shadow:none" data-action="remove-exercise" data-idx="${i}">${ic('dots','13px')}</button>
+          </div>`;
+      }).join('<div class="hair" style="margin:0 9px"></div>');
+
+      const body = collapsed ? '' : `
+        <div style="padding:7px">
+          ${rows || `<div class="kik" style="padding:9px 9px 6px;color:var(--ink-3)">No exercises in this section</div>`}
+          <div style="padding:4px 9px 6px">
+            <button class="chip" data-action="add-exercise-to-section" data-section="${section}" style="display:flex;width:100%;justify-content:center">${ic('plus','13px')}Add to ${section}</button>
           </div>
-          <span class="mtag mc-${MUSCLE_CLS[ex.primaryMuscleGroup]||'back'}">${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</span>
-          <button class="iconbtn" style="width:28px;height:28px;box-shadow:none" data-action="remove-exercise" data-idx="${i}">${ic('dots','13px')}</button>
         </div>`;
-    }).join('<div class="hair" style="margin:0 9px"></div>');
+
+      return `
+        <div class="sect" style="margin-bottom:10px">
+          <div class="shead" style="cursor:pointer" data-action="toggle-section" data-section="${section}">
+            <svg class="chev2${collapsed?'':' op'}" style="width:13px;height:13px;color:var(--ink-2)"><use href="#ic-chev"/></svg>
+            <i style="width:9px;height:9px;border-radius:3px;background:${SECTION_COLOR[section]}"></i>
+            <span class="sname">${section}</span>
+            <span class="scount" style="margin-left:auto">${entries.length}</span>
+          </div>
+          ${body}
+        </div>`;
+    }).join('');
 
     el.innerHTML = `
       ${sbar()}
@@ -597,13 +625,12 @@ const App = (() => {
         <div class="appbar">
           <button class="iconbtn" data-action="back">${ic('back')}</button>
           <div style="flex:1">
-            <input class="inp" style="padding:8px 12px;font-size:16px;border-radius:10px;height:auto" id="routine-name-inp" value="${editingRoutine.name}" placeholder="Routine name"/>
+            <input class="inp" style="padding:8px 12px;font-size:16px;border-radius:10px;height:auto" id="routine-name-inp" value="${esc(editingRoutine.name)}" placeholder="Routine name"/>
           </div>
           <button class="chip on" data-action="save-routine">Save</button>
         </div>
-        <div class="kik" style="margin:0 2px 10px;color:var(--ink-2)">Exercises</div>
-        ${exList ? `<div class="sect" style="margin-bottom:10px">${exList}</div>` : ''}
-        <button class="btn out" data-action="add-exercise-to-routine">${ic('plus')}Add exercise</button>
+        <div class="kik" style="margin:0 2px 10px;color:var(--ink-2)">Sections · tap to expand</div>
+        ${sectionsHtml}
       </div></div>`;
 
     document.getElementById('routine-name-inp')?.addEventListener('input', e => {
@@ -616,6 +643,7 @@ const App = (() => {
   let libraryQuery = '';
   let libraryMode = 'browse';
   let libraryCallback = null;
+  let pickSection = 'Primary';  // target section when adding to a routine
 
   function _buildLibraryList() {
     const exercises = Storage.getExercises().filter(e => !e.deleted);
@@ -633,10 +661,10 @@ const App = (() => {
     const listHtml = Object.entries(grouped).map(([group, exs]) => `
       <div class="kik" style="margin:13px 2px 8px;color:var(--ink-2)">${MUSCLE_LABELS[group]||group}</div>
       ${exs.map(ex => `
-        <div class="card" style="padding:11px 12px;cursor:pointer;margin-bottom:8px" data-action="${libraryMode==='pick'?'pick-exercise':'view-exercise'}" data-id="${ex.id}">
+        <div class="card" style="padding:11px 12px;cursor:pointer;margin-bottom:8px" data-action="${libraryMode==='browse'?'view-exercise':'pick-exercise'}" data-id="${ex.id}">
           <div class="btw">
             <div>
-              <div style="font-weight:600;font-size:13.5px">${ex.name}</div>
+              <div style="font-weight:600;font-size:13.5px">${esc(ex.name)}</div>
               <div class="kik" style="margin-top:3px">${ex.equipment} · ${ex.category}</div>
             </div>
             <div class="row" style="gap:5px">
@@ -671,7 +699,7 @@ const App = (() => {
         </div>
         <div class="search-bar">
           ${ic('search')}
-          <input type="search" id="lib-search" placeholder="Search exercises" value="${libraryQuery}">
+          <input type="search" id="lib-search" placeholder="Search exercises" value="${esc(libraryQuery)}">
         </div>
         <div class="row" style="gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch">
           <button class="chip${libraryFilter==='all'?' on':''}" data-action="filter-library" data-filter="all">All</button>
@@ -691,22 +719,48 @@ const App = (() => {
   }
 
   /* ────────────────── WORKOUT LOGGER ────────────────── */
+  // A fresh routine is pre-loaded with these so it is never empty on first use.
+  function defaultRoutineExercises() {
+    return [
+      { exerciseId: 'pushup',          section: 'Warm Up',   targetSets: 2, targetRepRange: '12–15', targetWeight: null },
+      { exerciseId: 'bench_press',     section: 'Primary',   targetSets: 4, targetRepRange: '6–8',   targetWeight: 60 },
+      { exerciseId: 'barbell_row',     section: 'Primary',   targetSets: 4, targetRepRange: '8–10',  targetWeight: 50 },
+      { exerciseId: 'ohp',             section: 'Primary',   targetSets: 3, targetRepRange: '8–10',  targetWeight: 40 },
+      { exerciseId: 'barbell_curl',    section: 'Secondary', targetSets: 3, targetRepRange: '10–12', targetWeight: 25 },
+      { exerciseId: 'tricep_pushdown', section: 'Secondary', targetSets: 3, targetRepRange: '12–15', targetWeight: 20 },
+    ];
+  }
+  function newRoutineDraft() {
+    return { id: null, name: 'New Routine', exercises: defaultRoutineExercises() };
+  }
+
+  function buildWorkoutExercise(exerciseId, order, numSets = 3) {
+    const ex = Storage.getExerciseById(exerciseId);
+    const lastSets = Storage.getLastSessionNumbers(exerciseId);
+    const sets = Array.from({ length: numSets }, (_, si) => ({
+      id: Storage.uid(),
+      setNumber: si + 1,
+      weight: null, reps: null,
+      durationSec: null,
+      setType: 'normal',
+      isCompleted: false,
+      restSec: ex?.category === 'compound' ? 180 : 90,
+    }));
+    return { exerciseId, order, notes: '', sets, lastSets };
+  }
+
   function buildNewWorkout(routine) {
     const id = Storage.uid();
-    const exercises = (routine ? routine.exercises || [] : []).map((re, i) => {
-      const ex = Storage.getExerciseById(re.exerciseId);
-      const lastSets = Storage.getLastSessionNumbers(re.exerciseId);
-      const numSets = re.targetSets || 3;
-      const sets = Array.from({ length: numSets }, (_, si) => ({
-        id: Storage.uid(),
-        setNumber: si + 1,
-        weight: null, reps: null,
-        durationSec: null,
-        setType: 'normal',
-        isCompleted: false,
-        restSec: ex?.category === 'compound' ? 180 : 90,
-      }));
-      return { exerciseId: re.exerciseId, order: i, notes: '', sets, lastSets };
+    const src = (routine ? routine.exercises || [] : [])
+      // Drop any exercise whose id no longer resolves so it can't break the logger.
+      .filter(re => Storage.getExerciseById(re.exerciseId))
+      // Order by section, preserving each exercise's existing order within.
+      .map((re, i) => ({ re, i }))
+      .sort((a, b) => sectionOrder(a.re) - sectionOrder(b.re) || a.i - b.i);
+    const exercises = src.map(({ re }, i) => {
+      const we = buildWorkoutExercise(re.exerciseId, i, re.targetSets || 3);
+      we.section = sectionOf(re);
+      return we;
     });
     return {
       id, routineId: routine?.id || null,
@@ -725,15 +779,16 @@ const App = (() => {
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0">
           <button class="iconbtn" style="width:32px;height:32px" data-action="pause-workout">${ic('back')}</button>
-          <div style="font-weight:700;font-size:13.5px;flex:1">${w.name}</div>
+          <div style="font-weight:700;font-size:13.5px;flex:1">${esc(w.name)}</div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
           <div class="empty">
             <div class="eico">${ic('dumbbell')}</div>
-            <h3>No exercises</h3>
-            <p>Add exercises to this routine before starting.</p>
+            <h3>No exercises yet</h3>
+            <p>Add your first exercise to start logging sets.</p>
           </div>
-          <button class="btn out" style="margin-top:12px" data-action="pause-workout">${ic('back')}Go back</button>
+          <button class="btn" style="margin-top:4px;max-width:260px" data-action="add-exercise-to-workout">${ic('plus')}Add exercise</button>
+          <button class="btn out" style="margin-top:10px;max-width:260px" data-action="pause-workout">${ic('back')}Go back</button>
         </div>`;
       return;
     }
@@ -742,7 +797,6 @@ const App = (() => {
 
     const setRows = curEx.sets.map((set, si) => {
       const isActive = si === w.currentSetIdx;
-      const isWarmup = set.setType === 'warmup';
       const lastSet = curEx.lastSets ? curEx.lastSets[si] : null;
       const prevStr = lastSet ? `${lastSet.weight||''}×${lastSet.reps||''}` : '—';
 
@@ -761,19 +815,20 @@ const App = (() => {
           <div class="score" style="padding:10px 6px;margin-top:6px;position:relative;overflow:hidden">
             <span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--led)"></span>
             <div class="row" style="padding-left:4px">
-              <span style="width:28px;font-weight:700;color:#fff;font-size:12px">${isWarmup?'W':si+1}</span>
+              <span style="width:28px;font-weight:700;color:#fff;font-size:12px">${setLabel(set, si)}</span>
               <span class="num" style="width:52px;font-size:11px;color:#9B9486">${prevStr}</span>
               <input class="num-inp led" id="inp-weight" type="number" inputmode="decimal" placeholder="kg" value="${set.weight||''}" style="flex:1;text-align:center;background:transparent;border:none;color:var(--led);font-size:20px;font-family:var(--disp);font-weight:800;outline:none;padding:0">
               <input class="num-inp led" id="inp-reps" type="number" inputmode="numeric" placeholder="rep" value="${set.reps||''}" style="flex:1;text-align:center;background:transparent;border:none;color:var(--led);font-size:20px;font-family:var(--disp);font-weight:800;outline:none;padding:0">
               <span style="width:26px;text-align:right"><i style="display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid #5f5a50"></i></span>
             </div>
+            ${setTypePicker(set, si)}
           </div>`;
       }
       return `
         <div class="card" style="padding:9px 6px;${si<w.currentSetIdx?'opacity:.65;':''}margin-top:6px;border-radius:12px;position:relative;overflow:hidden;${set.isCompleted&&lightColor?`box-shadow:none`:''}">
           ${lightColor ? `<span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${lightColor}"></span>` : ''}
           <div class="row" style="padding-left:${lightColor?'4px':'0'}">
-            <span style="width:28px;font-weight:700;font-size:12px;${isWarmup?'color:var(--amber)':''}">${isWarmup?'W':si+1}</span>
+            <span style="width:28px;font-weight:700;font-size:12px;${setLabelColor(set)?`color:${setLabelColor(set)}`:''}">${setLabel(set, si)}</span>
             <span class="num dim3" style="width:52px;font-size:11px">${prevStr}</span>
             <span class="num" style="flex:1;text-align:center;${lightColor?`color:${lightColor};font-weight:800`:''}">${set.weight||'—'}</span>
             <span class="num" style="flex:1;text-align:center">${set.reps||'—'}</span>
@@ -793,7 +848,7 @@ const App = (() => {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0">
         <button class="iconbtn" style="width:32px;height:32px" data-action="pause-workout">${ic('back')}</button>
-        <div style="font-weight:700;font-size:13.5px;flex:1">${w.name}</div>
+        <div style="font-weight:700;font-size:13.5px;flex:1">${esc(w.name)}</div>
         <div class="score" style="padding:6px 10px;display:flex;align-items:center;gap:5px">
           ${ic('clock','12px')}
           <span class="led" id="workout-timer" style="font-size:13px">${fmtTime(elapsed)}</span>
@@ -803,7 +858,7 @@ const App = (() => {
         <div class="scroll" style="padding-top:10px">
           <div class="btw" style="align-items:flex-start">
             <div>
-              <div class="title" style="font-size:22px">${ex.name}</div>
+              <div class="title" style="font-size:22px">${esc(ex.name)}</div>
               <div class="kik" style="margin-top:5px">${MUSCLE_LABELS[ex.primaryMuscleGroup]||''} · ${ex.equipment} · Set ${w.currentSetIdx+1} of ${curEx.sets.length}</div>
             </div>
             <button class="iconbtn" style="width:32px;height:32px" data-action="exercise-options">${ic('dots')}</button>
@@ -823,7 +878,6 @@ const App = (() => {
             <button class="chip" data-action="weight-step" data-step="1.25">+1.25</button>
             <button class="chip" data-action="weight-step" data-step="2.5">+2.5</button>
             <button class="chip" data-action="weight-step" data-step="5">+5</button>
-            <button class="chip on" data-action="set-type">Normal</button>
           </div>
           <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
             ${w.exercises.map((we, i) => {
@@ -877,7 +931,7 @@ const App = (() => {
     const newPRs = workoutState._newPRs || [];
     const allSets = (w.exercises||[]).reduce((acc, we) => acc.concat(we.sets.filter(s=>s.isCompleted)), []);
     const totalVol = allSets.reduce((sum, s) => sum + (s.weight||0)*(s.reps||0), 0);
-    const elapsed = w.endedAt ? Math.floor((new Date(w.endedAt)-new Date(w.startedAt))/1000) : 0;
+    const elapsed = w.durationSec != null ? w.durationSec : (w.endedAt ? Math.floor((new Date(w.endedAt)-new Date(w.startedAt))/1000) : 0);
 
     el.innerHTML = `
       <div class="scroll" style="padding-top:8px">
@@ -887,7 +941,7 @@ const App = (() => {
             <div style="position:relative">
               <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(150deg,#E8C36B,#CC9B66);display:grid;place-items:center;margin:0 auto 10px;animation:popScale .7s cubic-bezier(.34,1.4,.5,1) both">${ic('trophy','26px')}</div>
               <div class="title" style="font-size:28px;color:#fff">Good lift!</div>
-              <div style="font-weight:600;font-size:11.5px;color:#d9f3e1;margin-top:4px">${w.name}${newPRs.length ? ` · ${newPRs.length} PR${newPRs.length>1?'s':''}` : ''}</div>
+              <div style="font-weight:600;font-size:11.5px;color:#d9f3e1;margin-top:4px">${esc(w.name)}${newPRs.length ? ` · ${newPRs.length} PR${newPRs.length>1?'s':''}` : ''}</div>
             </div>
           </div>
           <div style="padding:14px">
@@ -903,8 +957,8 @@ const App = (() => {
             <div class="row" style="gap:8px;margin-bottom:9px">${ic('trophy','16px')}<span style="font-weight:700;font-size:13px">${newPRs.length} personal record${newPRs.length>1?'s':''}</span></div>
             ${newPRs.slice(0,3).map(pr=>`
               <div class="btw" style="padding:3px 0">
-                <span style="font-weight:500;font-size:12.5px">${pr.exerciseName} · ${pr.type==='est_1rm'?'est 1RM':'heaviest'}</span>
-                <span class="num" style="font-weight:800;color:var(--green)">${pr.value} kg</span>
+                <span style="font-weight:500;font-size:12.5px">${esc(pr.exerciseName)} · ${pr.type==='est_1rm'?'est 1RM':pr.type==='max_duration'?'longest hold':'heaviest'}</span>
+                <span class="num" style="font-weight:800;color:var(--green)">${pr.type==='max_duration'?fmtTime(pr.value):pr.value+' kg'}</span>
               </div>
               <div class="hair"></div>`).join('')}` : ''}
           </div>
@@ -979,13 +1033,13 @@ const App = (() => {
         <div class="dim" style="margin-top:11px;font-size:13px">No email, no password — your training lives on your device.</div>
         <div style="margin-top:28px">
           <div class="kik" style="margin-bottom:9px">What should we call you?</div>
-          <input class="inp" id="onb-name" type="text" placeholder="Your name" value="${onbName}" autocomplete="off">
+          <input class="inp" id="onb-name" type="text" placeholder="Your name" value="${esc(onbName)}" autocomplete="off">
         </div>`,
       2: `
         <div class="kik">Your goal</div>
         <div class="title" style="font-size:26px;line-height:1.12;margin-top:6px">How many days<br>a week?</div>
-        <div class="row" style="gap:9px;margin-top:24px">
-          ${[2,3,4,5].map(n=>`<button class="goalt${onbGoal===n?' on':''}" data-action="set-goal" data-goal="${n}"><div class="gn">${n}</div><small>DAYS</small></button>`).join('')}
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:24px">
+          ${[1,2,3,4,5,6,7].map(n=>`<button class="goalt${onbGoal===n?' on':''}" data-action="set-goal" data-goal="${n}"><div class="gn">${n}</div><small>DAY${n>1?'S':''}</small></button>`).join('')}
         </div>
         <div class="dim" style="margin-top:18px;font-size:12.5px;line-height:1.5">This becomes your weekly streak goal. Change it anytime — raising it never breaks your streak.</div>`,
       3: `
@@ -1037,15 +1091,15 @@ const App = (() => {
       const starter = {
         id: Storage.uid(), name: 'Routine A',
         exercises: [
-          { exerciseId: 'bench_press', targetSets: 4, targetRepRange: '6–8', targetWeight: 60 },
-          { exerciseId: 'ohp', targetSets: 3, targetRepRange: '8–10', targetWeight: 40 },
-          { exerciseId: 'incline_db_press', targetSets: 3, targetRepRange: '10–12', targetWeight: 20 },
-          { exerciseId: 'cable_fly', targetSets: 3, targetRepRange: '12–15', targetWeight: 15 },
-          { exerciseId: 'tricep_pushdown', targetSets: 3, targetRepRange: '12–15', targetWeight: 20 },
+          { exerciseId: 'pushup', section: 'Warm Up', targetSets: 2, targetRepRange: '12–15', targetWeight: null },
+          { exerciseId: 'bench_press', section: 'Primary', targetSets: 4, targetRepRange: '6–8', targetWeight: 60 },
+          { exerciseId: 'ohp', section: 'Primary', targetSets: 3, targetRepRange: '8–10', targetWeight: 40 },
+          { exerciseId: 'incline_db_press', section: 'Secondary', targetSets: 3, targetRepRange: '10–12', targetWeight: 20 },
+          { exerciseId: 'cable_fly', section: 'Secondary', targetSets: 3, targetRepRange: '12–15', targetWeight: 15 },
+          { exerciseId: 'tricep_pushdown', section: 'Secondary', targetSets: 3, targetRepRange: '12–15', targetWeight: 20 },
         ]
       };
       Storage.saveRoutine(starter);
-      Storage.saveSchedule({ MON: starter.id, TUE: null, WED: null, THU: null, FRI: null, SAT: null, SUN: null });
     }
     const onbScreen = document.getElementById('screen-onboarding');
     if (onbScreen) onbScreen.classList.remove('active');
@@ -1117,23 +1171,11 @@ const App = (() => {
     if (overlay._dismiss) overlay._dismiss();
   }
 
-  function showDayPicker(day) {
-    const routines = Storage.getRoutines();
-    const schedule = Storage.getSchedule();
-    const current = schedule[day];
-    const html = `
-      <div class="kik" style="margin-bottom:12px">${DAY_LABELS[day]} — assign routine</div>
-      <button class="chip${!current?' on':''}" style="width:100%;display:flex;margin-bottom:8px" data-action="modal-pick-day" data-day="${day}" data-routine="">Rest day</button>
-      ${routines.map(r=>`<button class="chip${current===r.id?' on':''}" style="width:100%;display:flex;margin-bottom:8px" data-action="modal-pick-day" data-day="${day}" data-routine="${r.id}">${r.name}</button>`).join('')}
-      <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>`;
-    showModal(html);
-  }
-
   function showRoutinePicker(onPick) {
     const routines = Storage.getRoutines();
     const html = `
       <div class="kik" style="margin-bottom:12px">Choose a routine</div>
-      ${routines.length ? routines.map(r=>`<button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="modal-pick-routine" data-id="${r.id}">${r.name}</button>`).join('') : '<div class="dim" style="font-size:13px;margin-bottom:12px">No routines yet</div>'}
+      ${routines.length ? routines.map(r=>`<button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="modal-pick-routine" data-id="${r.id}">${esc(r.name)}</button>`).join('') : '<div class="dim" style="font-size:13px;margin-bottom:12px">No routines yet</div>'}
       <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>
       <button class="btn out" style="margin-top:8px" data-action="modal-empty-workout">${ic('dumbbell')}Empty workout</button>`;
     showModal(html, null);
@@ -1150,7 +1192,6 @@ const App = (() => {
     if (action === 'modal-close') { hideModal(); return; }
 
     /* NAVIGATION */
-    if (action === 'go-schedule') { renderScreen('schedule'); screenStack.push('schedule'); showScreen('schedule'); return; }
     if (action === 'go-library') { libraryMode='browse'; libraryFilter='all'; libraryQuery=''; renderScreen('library'); screenStack.push('library'); showScreen('library'); return; }
     if (action === 'go-progress') { renderScreen('progress'); screenStack.push('progress'); showScreen('progress'); return; }
     if (action === 'go-muscle-balance') { renderScreen('muscle-balance'); screenStack.push('muscle-balance'); showScreen('muscle-balance'); return; }
@@ -1163,7 +1204,7 @@ const App = (() => {
       startWorkout(routine); return;
     }
     if (action === 'pick-routine' || action === 'start-quick') {
-      showRoutinePicker(r => { if (r) startWorkout(r); }); return;
+      showRoutinePicker(r => startWorkout(r)); return;
     }
     if (action === 'resume-workout') {
       const w = Storage.getActiveWorkout();
@@ -1236,25 +1277,16 @@ const App = (() => {
       return;
     }
 
-    /* SCHEDULE */
-    if (action === 'assign-day') { showDayPicker(btn.dataset.day); return; }
-    if (action === 'modal-pick-day') {
-      const schedule = Storage.getSchedule();
-      schedule[btn.dataset.day] = btn.dataset.routine || null;
-      Storage.saveSchedule(schedule);
-      hideModal();
-      renderScreen('schedule');
-      return;
-    }
-
     /* TRAIN */
     if (action === 'open-routine') {
       editingRoutineId = btn.dataset.id;
       editingRoutine = Storage.getRoutineById(btn.dataset.id);
+      collapsedSections = {};
       renderScreen('routine-editor'); screenStack.push('routine-editor'); showScreen('routine-editor'); return;
     }
     if (action === 'new-routine') {
-      editingRoutineId = null; editingRoutine = { id: null, name: 'New Routine', exercises: [] };
+      editingRoutineId = null; editingRoutine = newRoutineDraft();
+      collapsedSections = {};
       renderScreen('routine-editor'); screenStack.push('routine-editor'); showScreen('routine-editor'); return;
     }
     if (action === 'save-routine') {
@@ -1266,15 +1298,35 @@ const App = (() => {
       renderScreen('train');
       return;
     }
-    if (action === 'add-exercise-to-routine') {
+    if (action === 'toggle-section') {
+      const s = btn.dataset.section;
+      collapsedSections[s] = !collapsedSections[s];
+      renderScreen('routine-editor');
+      return;
+    }
+    if (action === 'add-exercise-to-section') {
+      pickSection = btn.dataset.section || 'Primary';
       libraryMode = 'pick'; libraryFilter = 'all'; libraryQuery = '';
+      renderScreen('library'); screenStack.push('library'); showScreen('library'); return;
+    }
+    if (action === 'add-exercise-to-workout') {
+      if (!workoutState) return;
+      hideModal();
+      libraryMode = 'workout-add'; libraryFilter = 'all'; libraryQuery = '';
       renderScreen('library'); screenStack.push('library'); showScreen('library'); return;
     }
     if (action === 'pick-exercise') {
       const exId = btn.dataset.id;
-      if (libraryMode === 'pick' && editingRoutine) {
+      if (libraryMode === 'workout-add' && workoutState) {
+        workoutState.exercises.push(buildWorkoutExercise(exId, workoutState.exercises.length));
+        workoutState.currentExIdx = workoutState.exercises.length - 1;
+        workoutState.currentSetIdx = 0;
+        Storage.saveActiveWorkout(workoutState);
+        popScreen();
+        renderScreen('workout-logger');
+      } else if (libraryMode === 'pick' && editingRoutine) {
         editingRoutine.exercises = editingRoutine.exercises || [];
-        editingRoutine.exercises.push({ exerciseId: exId, targetSets: 3, targetRepRange: '8–10', targetWeight: null });
+        editingRoutine.exercises.push({ exerciseId: exId, section: pickSection, targetSets: 3, targetRepRange: '8–10', targetWeight: null });
         popScreen();
         renderScreen('routine-editor');
       }
@@ -1324,7 +1376,7 @@ const App = (() => {
       const cur = user.weeklyTargetWorkouts || 3;
       const html = `
         <div class="kik" style="margin-bottom:12px">Weekly workout target</div>
-        ${[2,3,4,5].map(n=>`<button class="chip${cur===n?' on':''}" style="width:100%;display:flex;margin-bottom:8px;justify-content:center" data-action="set-weekly-target" data-n="${n}">${n} workouts / week</button>`).join('')}
+        ${[1,2,3,4,5,6,7].map(n=>`<button class="chip${cur===n?' on':''}" style="width:100%;display:flex;margin-bottom:8px;justify-content:center" data-action="set-weekly-target" data-n="${n}">${n} workout${n>1?'s':''} / week</button>`).join('')}
         <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>`;
       showModal(html); return;
     }
@@ -1341,7 +1393,7 @@ const App = (() => {
       const user = Storage.getUser() || {};
       const html = `
         <div class="kik" style="margin-bottom:12px">Display name</div>
-        <input class="inp" id="name-edit-inp" type="text" value="${user.name||''}" placeholder="Your name">
+        <input class="inp" id="name-edit-inp" type="text" value="${esc(user.name||'')}" placeholder="Your name">
         <button class="btn" style="margin-top:12px" data-action="save-name">Save</button>
         <button class="btn ghost" style="margin-top:8px" data-action="modal-close">Cancel</button>`;
       showModal(html); return;
@@ -1390,23 +1442,23 @@ const App = (() => {
         const ex = Storage.getExerciseById(we.exerciseId);
         const done = (we.sets||[]).filter(s=>s.isCompleted);
         if (!ex) return '';
-        return `<div class="btw" style="padding:7px 0"><span style="font-weight:500;font-size:13px">${ex.name}</span><span class="kik">${done.length} sets</span></div><div class="hair"></div>`;
+        return `<div class="btw" style="padding:7px 0"><span style="font-weight:500;font-size:13px">${esc(ex.name)}</span><span class="kik">${done.length} sets</span></div><div class="hair"></div>`;
       }).join('');
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${w.name||'Workout'}</div><div class="kik" style="margin-bottom:12px">${relTime(w.startedAt)} · ${sets} sets</div>${exList}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(w.name||'Workout')}</div><div class="kik" style="margin-bottom:12px">${relTime(w.startedAt)} · ${sets} sets</div>${exList}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'view-exercise') {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${ex.name}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prs.est1rm?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:19px;color:var(--green)">${prs.est1rm.value} kg</span></div>`:''}${prs.maxWeight?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:19px">${prs.maxWeight.value} kg</span></div>`:''}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prs.est1rm?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:19px;color:var(--green)">${prs.est1rm.value} kg</span></div>`:''}${prs.maxWeight?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:19px">${prs.maxWeight.value} kg</span></div>`:''}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'exercise-progress') {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:12px">${ex.name} — Progress</div>${prs.est1rm?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:20px;color:var(--green)">${prs.est1rm.value} kg</span></div><div class="hair"></div>`:''}${prs.maxWeight?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:20px">${prs.maxWeight.value} kg</span></div>`:'<div class="kik" style="padding:12px 0">No data yet — log sets to track progress.</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:12px">${esc(ex.name)} — Progress</div>${prs.est1rm?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:20px;color:var(--green)">${prs.est1rm.value} kg</span></div><div class="hair"></div>`:''}${prs.maxWeight?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:20px">${prs.maxWeight.value} kg</span></div>`:'<div class="kik" style="padding:12px 0">No data yet — log sets to track progress.</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'new-custom-exercise') {
@@ -1443,21 +1495,21 @@ const App = (() => {
       const ex = curEx ? Storage.getExerciseById(curEx.exerciseId) : null;
       if (!ex) return;
       showModal(`
-        <div class="kik" style="margin-bottom:12px">${ex.name}</div>
-        <button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="add-warmup-set">Add warm-up set</button>
+        <div class="kik" style="margin-bottom:12px">${esc(ex.name)}</div>
         <button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="add-set-to-ex">Add set</button>
+        <button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="add-exercise-to-workout">Add another exercise</button>
         <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>`);
       return;
     }
-    if (action === 'add-warmup-set') {
+    if (action === 'set-type-pick') {
       if (!workoutState) return;
+      const si = parseInt(btn.dataset.si);
       const curEx = workoutState.exercises[workoutState.currentExIdx];
-      curEx.sets.unshift({ id: Storage.uid(), setNumber: 0, weight: null, reps: null, durationSec: null, setType: 'warmup', isCompleted: false, restSec: 60 });
-      curEx.sets.forEach((s, i) => { s.setNumber = i + 1; });
-      workoutState.currentSetIdx = 0;
-      Storage.saveActiveWorkout(workoutState);
-      hideModal();
-      renderScreen('workout-logger');
+      if (curEx && curEx.sets[si]) {
+        curEx.sets[si].setType = btn.dataset.type;
+        Storage.saveActiveWorkout(workoutState);
+        renderScreen('workout-logger');
+      }
       return;
     }
     if (action === 'add-set-to-ex') {
@@ -1483,8 +1535,13 @@ const App = (() => {
   /* ────────────────── WORKOUT FLOW ────────────────── */
   function startWorkout(routine) {
     const existing = Storage.getActiveWorkout();
-    if (existing) { workoutState = existing; }
-    else {
+    // Only resume an existing session if it actually has logged content — a
+    // leftover empty/contentless session must never hijack a freshly chosen routine.
+    const hasContent = existing && (existing.exercises || []).some(e =>
+      (e.sets || []).some(s => s.isCompleted));
+    if (hasContent) {
+      workoutState = existing;
+    } else {
       workoutState = buildNewWorkout(routine);
       workoutState.currentExIdx = 0;
       workoutState.currentSetIdx = 0;
@@ -1540,7 +1597,8 @@ const App = (() => {
     document.getElementById('rest-timer-screen').style.display = 'none';
 
     workoutState.endedAt = new Date().toISOString();
-    workoutState.durationSec = Math.floor((new Date(workoutState.endedAt) - new Date(workoutState.startedAt)) / 1000);
+    const pausedMs = (workoutState._pausedOffset || 0) + (workoutState._pausedAt ? Date.now() - workoutState._pausedAt : 0);
+    workoutState.durationSec = Math.max(0, Math.floor((new Date(workoutState.endedAt) - new Date(workoutState.startedAt) - pausedMs) / 1000));
 
     const newPRs = Storage.checkAndUpdatePRs(workoutState);
     workoutState.prs = newPRs;
