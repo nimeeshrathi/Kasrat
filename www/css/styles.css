@@ -49,6 +49,8 @@ body {
   opacity: 1; pointer-events: all; transform: none;
 }
 .screen.no-tabs { bottom: 0; z-index: 205; }
+/* swipe-to-previous-tab: enter from the left instead of the right */
+.screen.from-left:not(.active) { transform: translateX(-32px); }
 .screen.slide-up { transform: translateY(100%); }
 .screen.slide-up.active { transform: translateY(0); }
 

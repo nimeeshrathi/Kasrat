@@ -401,6 +401,12 @@ const Storage = (() => {
             newPRs.push({ exerciseId: we.exerciseId, exerciseName: ex.name, type: 'max_duration', value: set.durationSec });
           }
         }
+        if (ex.trackingType === 'distance' && set.distance) {
+          if (!ep.maxDistance || set.distance > ep.maxDistance.value) {
+            ep.maxDistance = { value: set.distance, achievedAt: workout.startedAt, workoutId: workout.id };
+            newPRs.push({ exerciseId: we.exerciseId, exerciseName: ex.name, type: 'max_distance', value: set.distance });
+          }
+        }
       });
       if (exNewE1rm) newPRs.push(exNewE1rm);
       else if (exNewWeight) newPRs.push(exNewWeight);
@@ -497,14 +503,18 @@ const Storage = (() => {
     const prs = getPRs();
     const exercises = getExercises();
     let latest = null;
+    const consider = (exName, rec, type) => {
+      if (!rec) return;
+      if (!latest || new Date(rec.achievedAt) > new Date(latest.achievedAt)) {
+        latest = { exerciseName: exName, type, value: rec.value, achievedAt: rec.achievedAt };
+      }
+    };
     Object.entries(prs).forEach(([exId, ep]) => {
       const ex = exercises.find(e => e.id === exId);
       if (!ex) return;
-      if (ep.est1rm) {
-        if (!latest || new Date(ep.est1rm.achievedAt) > new Date(latest.achievedAt)) {
-          latest = { exerciseName: ex.name, type: 'est 1RM', value: ep.est1rm.value, achievedAt: ep.est1rm.achievedAt };
-        }
-      }
+      consider(ex.name, ep.est1rm, 'est_1rm');
+      consider(ex.name, ep.maxDuration, 'max_duration');
+      consider(ex.name, ep.maxDistance, 'max_distance');
     });
     return latest;
   }

@@ -2,6 +2,7 @@
 const App = (() => {
   const MUSCLE_LABELS = { chest:'Chest', back:'Back', shoulders:'Delts', arms:'Arms', legs:'Legs', core:'Core' };
   const MUSCLE_CLS = { chest:'chest', back:'back', shoulders:'sho', arms:'arms', legs:'legs', core:'core' };
+  const TAB_ORDER = ['home', 'train', 'history', 'stats', 'profile'];
 
   /* Routine sections (fixed order). Each routine exercise carries a `section`. */
   const SECTIONS = ['Warm Up', 'Mobility', 'Primary', 'Secondary', 'Static Stretch'];
@@ -29,6 +30,87 @@ const App = (() => {
       ${SET_TYPES.map(t => `<button class="sttype${(set.setType||'normal')===t.k?' on':''}" data-action="set-type-pick" data-si="${si}" data-type="${t.k}">${t.label}</button>`).join('')}
       <span class="kik" style="margin-left:auto;align-self:center;color:#8C8678">type</span>
     </div>`;
+  }
+
+  // Compact value + label for the home "Latest PR" card, by PR type.
+  function latestPRView(pr) {
+    if (pr.type === 'max_duration') return { value: fmtTime(pr.value), label: 'hold' };
+    if (pr.type === 'max_distance') return { value: `${pr.value}km`, label: 'dist' };
+    return { value: pr.value, label: 'est' };
+  }
+
+  // PR rows for an exercise's detail modal, covering every PR type we record.
+  function prRows(prs, pad) {
+    const rows = [];
+    if (prs.est1rm)      rows.push(['Est 1RM', `${prs.est1rm.value} kg`, 'var(--green)']);
+    if (prs.maxWeight)   rows.push(['Max weight', `${prs.maxWeight.value} kg`, '']);
+    if (prs.maxDuration) rows.push(['Longest hold', fmtTime(prs.maxDuration.value), 'var(--green)']);
+    if (prs.maxDistance) rows.push(['Longest distance', `${prs.maxDistance.value} km`, 'var(--green)']);
+    return rows.map(([label, val, color]) =>
+      `<div class="btw" style="padding:${pad}"><span style="font-size:13px;font-weight:500">${label}</span><span class="bign" style="font-size:19px${color?`;color:${color}`:''}">${val}</span></div>`
+    ).join('');
+  }
+
+  /* ── PER-EXERCISE LOGGING MODE (weight / bodyweight / time / distance) ── */
+  function logMode(ex) {
+    if (!ex) return 'weight';
+    if (ex.trackingType === 'time') return 'time';
+    if (ex.trackingType === 'distance') return 'distance';
+    if (ex.trackingType === 'bodyweight') return 'bodyweight';
+    return 'weight';
+  }
+  // The previous session's reference string for a set, shown under "Prev".
+  function prevRef(mode, lastSet) {
+    if (!lastSet) return '—';
+    if (mode === 'time') return lastSet.durationSec ? fmtTime(lastSet.durationSec) : '—';
+    if (mode === 'distance') return lastSet.distance != null ? lastSet.distance + 'km' : '—';
+    return `${lastSet.weight||''}×${lastSet.reps||''}`;
+  }
+  // Traffic-light vs last session, by mode.
+  function setLight(mode, set, lastSet) {
+    if (!set.isCompleted) return '';
+    if (mode === 'time') {
+      if (!set.durationSec) return '';
+      if (!lastSet || !lastSet.durationSec) return 'var(--green)';
+      return set.durationSec > lastSet.durationSec ? 'var(--green)' : set.durationSec === lastSet.durationSec ? 'var(--amber)' : 'var(--below)';
+    }
+    if (mode === 'distance') {
+      if (set.distance == null) return '';
+      if (!lastSet || lastSet.distance == null) return 'var(--green)';
+      return set.distance > lastSet.distance ? 'var(--green)' : set.distance === lastSet.distance ? 'var(--amber)' : 'var(--below)';
+    }
+    if (!set.weight || !set.reps) return '';
+    if (!lastSet) return 'var(--green)';
+    const beatWeight = set.weight > (lastSet.weight||0);
+    const beatReps = set.weight === lastSet.weight && set.reps > (lastSet.reps||0);
+    const matchAll = set.weight === lastSet.weight && set.reps === lastSet.reps;
+    return (beatWeight || beatReps) ? 'var(--green)' : matchAll ? 'var(--amber)' : 'var(--below)';
+  }
+  // Column headers for the set board.
+  function colHeader(mode) {
+    const cols = mode === 'time' ? [['Time','flex:1;text-align:center']]
+      : mode === 'distance' ? [['Km','flex:1;text-align:center'],['Min','flex:1;text-align:center']]
+      : mode === 'bodyweight' ? [['+Kg','flex:1;text-align:center'],['Reps','flex:1;text-align:center']]
+      : [['Kg','flex:1;text-align:center'],['Reps','flex:1;text-align:center']];
+    return `<span class="kik" style="width:28px">Set</span><span class="kik" style="width:56px">Prev</span>${cols.map(([l,s])=>`<span class="kik" style="${s}">${l}</span>`).join('')}<span class="kik" style="width:26px;text-align:right">✓</span>`;
+  }
+  const _INP_STYLE = 'text-align:center;background:transparent;border:none;color:var(--led);font-size:20px;font-family:var(--disp);font-weight:800;outline:none;padding:0';
+  // Active-row editable inputs for the current set, by mode.
+  function activeInputs(mode, set) {
+    if (mode === 'time')
+      return `<input class="num-inp led" id="inp-duration" type="number" inputmode="numeric" placeholder="sec" value="${set.durationSec||''}" style="flex:2;${_INP_STYLE}">`;
+    if (mode === 'distance')
+      return `<input class="num-inp led" id="inp-distance" type="number" inputmode="decimal" placeholder="km" value="${set.distance!=null?set.distance:''}" style="flex:1;${_INP_STYLE}"><input class="num-inp led" id="inp-duration" type="number" inputmode="numeric" placeholder="min" value="${set.durationSec?Math.round(set.durationSec/60):''}" style="flex:1;${_INP_STYLE}">`;
+    return `<input class="num-inp led" id="inp-weight" type="number" inputmode="decimal" placeholder="${mode==='bodyweight'?'+kg':'kg'}" value="${set.weight||''}" style="flex:1;${_INP_STYLE}"><input class="num-inp led" id="inp-reps" type="number" inputmode="numeric" placeholder="rep" value="${set.reps||''}" style="flex:1;${_INP_STYLE}">`;
+  }
+  // Read-only cells for completed / upcoming rows, by mode.
+  function displayCells(mode, set, lightColor) {
+    const hl = lightColor ? `color:${lightColor};font-weight:800` : '';
+    if (mode === 'time')
+      return `<span class="num" style="flex:2;text-align:center;${hl}">${set.durationSec?fmtTime(set.durationSec):'—'}</span>`;
+    if (mode === 'distance')
+      return `<span class="num" style="flex:1;text-align:center;${hl}">${set.distance!=null?set.distance:'—'}</span><span class="num" style="flex:1;text-align:center">${set.durationSec?Math.round(set.durationSec/60):'—'}</span>`;
+    return `<span class="num" style="flex:1;text-align:center;${hl}">${set.weight||'—'}</span><span class="num" style="flex:1;text-align:center">${set.reps||'—'}</span>`;
   }
 
   let screenStack = [];
@@ -60,7 +142,7 @@ const App = (() => {
   }
   function fmtVol(kg) {
     if (kg >= 1000) return `${(kg/1000).toFixed(1)}k`;
-    return `${kg}`;
+    return `${Math.round(kg)}`;
   }
   function timeGreeting() {
     const h = new Date().getHours();
@@ -75,7 +157,7 @@ const App = (() => {
   function clockTime() {
     const d = new Date();
     const h = d.getHours(), m = d.getMinutes();
-    return `${h > 12 ? h-12 : h || 12}:${String(m).padStart(2,'0')}`;
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h < 12 ? 'AM' : 'PM'}`;
   }
   function relTime(iso) {
     const diff = (Date.now() - new Date(iso)) / 1000;
@@ -139,17 +221,36 @@ const App = (() => {
     showScreen(id, false);
   }
 
-  function setActiveTab(tab) {
+  function setActiveTab(tab, dir = 0) {
     activeTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
     const tabEl = document.querySelector(`.tab[data-tab="${tab}"]`);
     if (tabEl) tabEl.classList.add('on');
     const tabScreens = { home:'home', train:'train', history:'history', stats:'stats', profile:'profile' };
     if (tabScreens[tab]) {
-      screenStack = [tabScreens[tab]];
-      renderScreen(tabScreens[tab]);
-      showScreen(tabScreens[tab], false);
+      const id = tabScreens[tab];
+      screenStack = [id];
+      renderScreen(id);
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('from-left'));
+      // dir < 0 = moving to a previous tab → slide in from the left instead of the right.
+      if (dir < 0) {
+        const elNew = document.getElementById('screen-' + id);
+        if (elNew) { elNew.classList.add('from-left'); void elNew.offsetWidth; }
+      }
+      showScreen(id, false);
     }
+  }
+
+  /* Swipe between the 5 root tabs. dir: +1 = next (swipe left), -1 = prev (swipe right). */
+  function swipeTab(dir) {
+    // Only when sitting on a tab root (not in a pushed screen, logger, or onboarding).
+    if (screenStack.length !== 1 || screenStack[0] !== activeTab) return;
+    if (!TAB_ORDER.includes(activeTab)) return;
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay && getComputedStyle(overlay).display !== 'none') return;
+    const i = TAB_ORDER.indexOf(activeTab) + dir;
+    if (i < 0 || i >= TAB_ORDER.length) return;
+    setActiveTab(TAB_ORDER[i], dir);
   }
 
   function renderScreen(id) {
@@ -263,8 +364,8 @@ const App = (() => {
         <div class="card" style="flex:1;margin:0;padding:13px">
           <div class="kik">Latest PR</div>
           <div class="row" style="gap:5px;margin-top:6px">${ic('trophy','14px')}<span style="font-weight:700;font-size:11.5px">${esc(latestPR.exerciseName.split(' ').slice(0,2).join(' '))}</span></div>
-          <div class="bign" style="font-size:22px;margin-top:4px;color:var(--green)">${latestPR.value}</div>
-          <div class="kik" style="margin-top:3px">est · ${relTime(latestPR.achievedAt)}</div>
+          <div class="bign" style="font-size:22px;margin-top:4px;color:var(--green)">${latestPRView(latestPR).value}</div>
+          <div class="kik" style="margin-top:3px">${latestPRView(latestPR).label} · ${relTime(latestPR.achievedAt)}</div>
         </div>` : `
         <div class="card" style="flex:1;margin:0;padding:13px">
           <div class="kik">Personal Records</div>
@@ -386,10 +487,15 @@ const App = (() => {
       </div></div>`;
   }
 
+  function ymdLocal(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
   function buildHeatmap() {
     const workouts = Storage.getWorkouts();
     const dateMap = {};
-    workouts.forEach(w => { const d = w.startedAt.slice(0,10); dateMap[d] = (dateMap[d]||0)+1; });
+    // Use local dates so cells line up with the device clock (and the streak math).
+    workouts.forEach(w => { const d = ymdLocal(new Date(w.startedAt)); dateMap[d] = (dateMap[d]||0)+1; });
     const lv = ['var(--line-2)','#CADBCB','#9CC0A4','var(--red)'];
     let html = '';
     const today = new Date();
@@ -398,7 +504,7 @@ const App = (() => {
       for (let d = 0; d < 7; d++) {
         const date = new Date(today);
         date.setDate(today.getDate() - (w * 7 + (6 - d)));
-        const key = date.toISOString().slice(0,10);
+        const key = ymdLocal(date);
         const cnt = dateMap[key] || 0;
         const lvl = cnt === 0 ? 0 : cnt === 1 ? 1 : cnt === 2 ? 2 : 3;
         html += `<i style="width:9px;height:9px;border-radius:2px;background:${lv[lvl]}"></i>`;
@@ -631,6 +737,7 @@ const App = (() => {
         </div>
         <div class="kik" style="margin:0 2px 10px;color:var(--ink-2)">Sections · tap to expand</div>
         ${sectionsHtml}
+        ${editingRoutine.id ? `<button class="btn ghost" style="margin-top:16px;color:var(--red);border-color:var(--red-soft)" data-action="delete-routine">Delete routine</button>` : ''}
       </div></div>`;
 
     document.getElementById('routine-name-inp')?.addEventListener('input', e => {
@@ -795,20 +902,13 @@ const App = (() => {
 
     const elapsed = Math.floor((Date.now() - new Date(w.startedAt).getTime() - (w._pausedOffset || 0)) / 1000);
 
+    const mode = logMode(ex);
+
     const setRows = curEx.sets.map((set, si) => {
       const isActive = si === w.currentSetIdx;
       const lastSet = curEx.lastSets ? curEx.lastSets[si] : null;
-      const prevStr = lastSet ? `${lastSet.weight||''}×${lastSet.reps||''}` : '—';
-
-      let lightColor = '';
-      if (set.isCompleted && set.weight && set.reps) {
-        if (lastSet) {
-          const beatWeight = set.weight > (lastSet.weight||0);
-          const beatReps = set.weight === lastSet.weight && set.reps > (lastSet.reps||0);
-          const matchAll = set.weight === lastSet.weight && set.reps === lastSet.reps;
-          lightColor = (beatWeight || beatReps) ? 'var(--green)' : matchAll ? 'var(--amber)' : 'var(--below)';
-        } else { lightColor = 'var(--green)'; }
-      }
+      const prevStr = prevRef(mode, lastSet);
+      const lightColor = setLight(mode, set, lastSet);
 
       if (isActive && !set.isCompleted) {
         return `
@@ -817,8 +917,7 @@ const App = (() => {
             <div class="row" style="padding-left:4px">
               <span style="width:28px;font-weight:700;color:#fff;font-size:12px">${setLabel(set, si)}</span>
               <span class="num" style="width:52px;font-size:11px;color:#9B9486">${prevStr}</span>
-              <input class="num-inp led" id="inp-weight" type="number" inputmode="decimal" placeholder="kg" value="${set.weight||''}" style="flex:1;text-align:center;background:transparent;border:none;color:var(--led);font-size:20px;font-family:var(--disp);font-weight:800;outline:none;padding:0">
-              <input class="num-inp led" id="inp-reps" type="number" inputmode="numeric" placeholder="rep" value="${set.reps||''}" style="flex:1;text-align:center;background:transparent;border:none;color:var(--led);font-size:20px;font-family:var(--disp);font-weight:800;outline:none;padding:0">
+              ${activeInputs(mode, set)}
               <span style="width:26px;text-align:right"><i style="display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid #5f5a50"></i></span>
             </div>
             ${setTypePicker(set, si)}
@@ -830,20 +929,20 @@ const App = (() => {
           <div class="row" style="padding-left:${lightColor?'4px':'0'}">
             <span style="width:28px;font-weight:700;font-size:12px;${setLabelColor(set)?`color:${setLabelColor(set)}`:''}">${setLabel(set, si)}</span>
             <span class="num dim3" style="width:52px;font-size:11px">${prevStr}</span>
-            <span class="num" style="flex:1;text-align:center;${lightColor?`color:${lightColor};font-weight:800`:''}">${set.weight||'—'}</span>
-            <span class="num" style="flex:1;text-align:center">${set.reps||'—'}</span>
+            ${displayCells(mode, set, lightColor)}
             <span style="width:26px;text-align:right">${set.isCompleted ? `${ic('check','14px')}` : ''}</span>
           </div>
         </div>`;
     }).join('');
 
     const weight = curEx.sets[w.currentSetIdx]?.weight || 0;
-    const barbellCard = (ex.trackingType === 'weight_reps' && weight >= 20) ? `
+    const barbellCard = (mode === 'weight' && weight >= 20) ? `
       <div class="card" style="margin-top:12px;padding:11px 12px">
         ${renderBarbell(weight)}
       </div>` : '';
 
     const allDone = w.exercises.every(we => we.sets.every(s => s.isCompleted));
+    const curExDone = curEx.sets.every(s => s.isCompleted);
 
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0">
@@ -865,20 +964,17 @@ const App = (() => {
           </div>
           <div style="margin-top:12px">
             <div class="row" style="padding:0 6px 7px">
-              <span class="kik" style="width:28px">Set</span>
-              <span class="kik" style="width:56px">Prev</span>
-              <span class="kik" style="flex:1;text-align:center">Kg</span>
-              <span class="kik" style="flex:1;text-align:center">Reps</span>
-              <span class="kik" style="width:26px;text-align:right">✓</span>
+              ${colHeader(mode)}
             </div>
             ${setRows}
           </div>
           ${barbellCard}
+          ${mode === 'weight' ? `
           <div class="row" style="gap:7px;margin-top:12px">
             <button class="chip" data-action="weight-step" data-step="1.25">+1.25</button>
             <button class="chip" data-action="weight-step" data-step="2.5">+2.5</button>
             <button class="chip" data-action="weight-step" data-step="5">+5</button>
-          </div>
+          </div>` : ''}
           <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
             ${w.exercises.map((we, i) => {
               const tex = Storage.getExerciseById(we.exerciseId);
@@ -890,6 +986,9 @@ const App = (() => {
         <div style="padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:9px;flex-shrink:0">
           ${allDone ? `
             <button class="btn" style="flex:1" data-action="finish-workout">${ic('check')}Finish workout</button>
+          ` : curExDone ? `
+            <button class="btn out" style="flex:1;height:48px" data-action="add-set-to-ex">${ic('plus')}Add set</button>
+            <button class="btn" style="flex:1;height:48px" data-action="finish-workout">${ic('check')}Finish workout</button>
           ` : `
             <button class="btn out" style="flex:1;height:48px" data-action="start-rest-timer">${ic('rest')}Rest ${fmtTime(curEx.sets[w.currentSetIdx]?.restSec||90)}</button>
             <button class="btn" style="flex:1.3;height:48px" data-action="log-set">${ic('check')}Log set</button>
@@ -910,6 +1009,16 @@ const App = (() => {
     });
     document.getElementById('inp-reps')?.addEventListener('input', e => {
       curEx.sets[w.currentSetIdx].reps = parseInt(e.target.value) || null;
+      Storage.saveActiveWorkout(w);
+    });
+    document.getElementById('inp-distance')?.addEventListener('input', e => {
+      curEx.sets[w.currentSetIdx].distance = parseFloat(e.target.value) || null;
+      Storage.saveActiveWorkout(w);
+    });
+    document.getElementById('inp-duration')?.addEventListener('input', e => {
+      const v = parseFloat(e.target.value) || null;
+      // time mode stores seconds directly; distance mode's duration field is minutes
+      curEx.sets[w.currentSetIdx].durationSec = v == null ? null : (mode === 'distance' ? Math.round(v * 60) : Math.round(v));
       Storage.saveActiveWorkout(w);
     });
   }
@@ -957,8 +1066,8 @@ const App = (() => {
             <div class="row" style="gap:8px;margin-bottom:9px">${ic('trophy','16px')}<span style="font-weight:700;font-size:13px">${newPRs.length} personal record${newPRs.length>1?'s':''}</span></div>
             ${newPRs.slice(0,3).map(pr=>`
               <div class="btw" style="padding:3px 0">
-                <span style="font-weight:500;font-size:12.5px">${esc(pr.exerciseName)} · ${pr.type==='est_1rm'?'est 1RM':pr.type==='max_duration'?'longest hold':'heaviest'}</span>
-                <span class="num" style="font-weight:800;color:var(--green)">${pr.type==='max_duration'?fmtTime(pr.value):pr.value+' kg'}</span>
+                <span style="font-weight:500;font-size:12.5px">${esc(pr.exerciseName)} · ${pr.type==='est_1rm'?'est 1RM':pr.type==='max_duration'?'longest hold':pr.type==='max_distance'?'longest distance':'heaviest'}</span>
+                <span class="num" style="font-weight:800;color:var(--green)">${pr.type==='max_duration'?fmtTime(pr.value):pr.type==='max_distance'?pr.value+' km':pr.value+' kg'}</span>
               </div>
               <div class="hair"></div>`).join('')}` : ''}
           </div>
@@ -1108,10 +1217,12 @@ const App = (() => {
 
   /* ────────────────── REST TIMER ────────────────── */
   let restRemaining = 0;
+  let restPaused = false;
 
   function startRestTimer(seconds, onDone) {
     clearInterval(restTimerInterval);
     restRemaining = seconds;
+    restPaused = false;
     const el = document.getElementById('rest-timer-screen');
     if (!el) return;
     el.style.display = 'flex';
@@ -1135,7 +1246,7 @@ const App = (() => {
           <div class="row" style="gap:7px;color:var(--ink-2)">${ic('vibe','14px')}<span style="font-weight:500;font-size:11.5px">Buzzes when done — even if locked</span></div>
         </div>
         <div style="padding:4px 16px 20px;display:flex;gap:9px;flex-shrink:0">
-          <button class="btn out" style="flex:1;height:48px" id="rest-pause">${ic('pause')}Pause</button>
+          <button class="btn out" style="flex:1;height:48px" id="rest-pause">${ic(restPaused?'bolt':'pause')}${restPaused?'Resume':'Pause'}</button>
           <button class="btn" style="flex:1;height:48px" id="rest-skip">${ic('skip')}Skip</button>
         </div>`;
       document.getElementById('rest-skip')?.addEventListener('click', () => {
@@ -1143,9 +1254,14 @@ const App = (() => {
         el.style.display = 'none';
         if (onDone) onDone();
       });
+      document.getElementById('rest-pause')?.addEventListener('click', () => {
+        restPaused = !restPaused;
+        updateDisplay();
+      });
     }
     updateDisplay();
     restTimerInterval = setInterval(() => {
+      if (restPaused) return;
       restRemaining--;
       if (restRemaining <= 0) {
         clearInterval(restTimerInterval);
@@ -1298,6 +1414,24 @@ const App = (() => {
       renderScreen('train');
       return;
     }
+    if (action === 'delete-routine') {
+      if (!editingRoutine || !editingRoutine.id) return;
+      showModal(`
+        <div class="kik" style="margin-bottom:12px">Delete routine?</div>
+        <div style="font-size:13.5px;color:var(--ink-2);line-height:1.5;margin-bottom:14px">"${esc(editingRoutine.name)}" will be removed. Your logged workout history is kept.</div>
+        <button class="btn" style="background:var(--red)" data-action="confirm-delete-routine">Delete</button>
+        <button class="btn ghost" style="margin-top:8px" data-action="modal-close">Cancel</button>`);
+      return;
+    }
+    if (action === 'confirm-delete-routine') {
+      const id = editingRoutine && editingRoutine.id;
+      if (id) Storage.deleteRoutine(id);
+      editingRoutine = null; editingRoutineId = null;
+      hideModal();
+      popScreen();
+      renderScreen('train');
+      return;
+    }
     if (action === 'toggle-section') {
       const s = btn.dataset.section;
       collapsedSections[s] = !collapsedSections[s];
@@ -1348,8 +1482,18 @@ const App = (() => {
     if (action === 'repeat-workout') {
       const w = Storage.getWorkoutById(btn.dataset.id);
       if (!w) return;
-      const routine = w.routineId ? Storage.getRoutineById(w.routineId) : null;
-      startWorkout(routine); return;
+      // Repeat the *actual* past session — not the (possibly edited or deleted)
+      // routine template — so ad-hoc and orphaned workouts repeat correctly.
+      const template = {
+        id: w.routineId || null,
+        name: w.name || 'Workout',
+        exercises: (w.exercises || []).map(we => ({
+          exerciseId: we.exerciseId,
+          section: we.section,
+          targetSets: (we.sets || []).length || 3,
+        })),
+      };
+      startWorkout(template); return;
     }
 
     /* PROFILE */
@@ -1451,14 +1595,14 @@ const App = (() => {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prs.est1rm?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:19px;color:var(--green)">${prs.est1rm.value} kg</span></div>`:''}${prs.maxWeight?`<div class="btw" style="margin-bottom:8px"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:19px">${prs.maxWeight.value} kg</span></div>`:''}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prRows(prs, '0 0 8px')||'<div class="kik" style="margin-bottom:8px">No records yet</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'exercise-progress') {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:12px">${esc(ex.name)} — Progress</div>${prs.est1rm?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Est 1RM</span><span class="bign" style="font-size:20px;color:var(--green)">${prs.est1rm.value} kg</span></div><div class="hair"></div>`:''}${prs.maxWeight?`<div class="btw" style="padding:7px 0"><span style="font-size:13px;font-weight:500">Max weight</span><span class="bign" style="font-size:20px">${prs.maxWeight.value} kg</span></div>`:'<div class="kik" style="padding:12px 0">No data yet — log sets to track progress.</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:12px">${esc(ex.name)} — Progress</div>${prRows(prs, '7px 0')||'<div class="kik" style="padding:12px 0">No data yet — log sets to track progress.</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'new-custom-exercise') {
@@ -1517,6 +1661,9 @@ const App = (() => {
       const curEx = workoutState.exercises[workoutState.currentExIdx];
       const lastSet = curEx.sets[curEx.sets.length - 1] || {};
       curEx.sets.push({ id: Storage.uid(), setNumber: curEx.sets.length + 1, weight: lastSet.weight || null, reps: lastSet.reps || null, durationSec: null, setType: 'normal', isCompleted: false, restSec: lastSet.restSec || 90 });
+      // Focus the new set so it's immediately editable (also clears the
+      // "completed exercise" dead-end where no set was active).
+      workoutState.currentSetIdx = curEx.sets.length - 1;
       Storage.saveActiveWorkout(workoutState);
       hideModal();
       renderScreen('workout-logger');
@@ -1558,17 +1705,28 @@ const App = (() => {
   }
 
   function logCurrentSet() {
-    const weightInp = document.getElementById('inp-weight');
-    const repsInp = document.getElementById('inp-reps');
-    if (!workoutState || !weightInp || !repsInp) return;
-
-    const w = parseFloat(weightInp.value) || null;
-    const r = parseInt(repsInp.value) || null;
-
+    if (!workoutState) return;
     const curEx = workoutState.exercises[workoutState.currentExIdx];
     const curSet = curEx.sets[workoutState.currentSetIdx];
-    curSet.weight = w;
-    curSet.reps = r;
+    const mode = logMode(Storage.getExerciseById(curEx.exerciseId));
+
+    if (mode === 'time') {
+      const d = document.getElementById('inp-duration');
+      if (!d) return;
+      curSet.durationSec = parseInt(d.value) || null;
+    } else if (mode === 'distance') {
+      const dist = document.getElementById('inp-distance');
+      const dur = document.getElementById('inp-duration');
+      if (!dist) return;
+      curSet.distance = parseFloat(dist.value) || null;
+      curSet.durationSec = (dur && dur.value) ? Math.round((parseFloat(dur.value) || 0) * 60) || null : null;
+    } else {
+      const weightInp = document.getElementById('inp-weight');
+      const repsInp = document.getElementById('inp-reps');
+      if (!weightInp || !repsInp) return;
+      curSet.weight = parseFloat(weightInp.value) || null;
+      curSet.reps = parseInt(repsInp.value) || null;
+    }
     curSet.isCompleted = true;
     Storage.saveActiveWorkout(workoutState);
 
@@ -1632,6 +1790,22 @@ const App = (() => {
     document.getElementById('modal-overlay')?.addEventListener('click', e => {
       if (e.target === document.getElementById('modal-overlay')) hideModal();
     });
+
+    // Swipe left/right to move between root tabs.
+    const appEl = document.getElementById('app');
+    let sx = 0, sy = 0, st = 0;
+    appEl?.addEventListener('touchstart', e => {
+      const t = e.changedTouches[0];
+      sx = t.clientX; sy = t.clientY; st = Date.now();
+    }, { passive: true });
+    appEl?.addEventListener('touchend', e => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy, dt = Date.now() - st;
+      // Quick, mostly-horizontal flick.
+      if (dt < 600 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+        swipeTab(dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
 
     setInterval(() => {
       const timers = document.querySelectorAll('.sbar span:first-child');
