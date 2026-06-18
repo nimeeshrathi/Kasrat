@@ -267,12 +267,19 @@ const Storage = (() => {
     ];
   }
 
+  // In-memory cache: the exercise list is read in tight render loops, so we parse
+  // localStorage once per session and back lookups with an id→exercise Map.
+  let _exCache = null, _exById = null;
+  function _cacheExercises(list) { _exCache = list; _exById = new Map(list.map(e => [e.id, e])); return list; }
+  function _invalidateExercises() { _exCache = null; _exById = null; }
+
   function getExercises() {
+    if (_exCache) return _exCache;
     const defaults = getDefaultExercises();
     let stored = get('exercises');
     if (!stored || !stored.length) {
       set('exercises', defaults);
-      return defaults;
+      return _cacheExercises(defaults);
     }
     // Merge in any built-in exercises shipped in a newer version, while keeping
     // the user's custom exercises and any edits/soft-deletes to existing ones.
@@ -282,15 +289,19 @@ const Storage = (() => {
       stored = stored.concat(added);
       set('exercises', stored);
     }
-    return stored;
+    return _cacheExercises(stored);
   }
-  function getExerciseById(id) { return getExercises().find(e => e.id === id) || null; }
+  function getExerciseById(id) {
+    if (!_exById) getExercises();
+    return _exById.get(id) || null;
+  }
   function saveExercise(ex) {
     const list = getExercises();
     const idx = list.findIndex(e => e.id === ex.id);
     if (idx >= 0) { list[idx] = ex; }
     else { ex.id = ex.id || uid(); ex.isCustom = true; list.push(ex); }
     set('exercises', list);
+    _invalidateExercises();
     return ex;
   }
   function deleteExercise(id) {
@@ -549,6 +560,7 @@ const Storage = (() => {
         const defaults = getDefaultExercises();
         const customs = d.exercises.filter(e => e.isCustom);
         set('exercises', [...defaults, ...customs]);
+        _invalidateExercises();
       }
       return true;
     } catch(e) { return false; }

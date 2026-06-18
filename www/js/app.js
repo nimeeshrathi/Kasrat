@@ -118,6 +118,15 @@ const App = (() => {
   let workoutTimerInterval = null;
   let restTimerInterval = null;
   let workoutState = null;
+  let _awSaveTimer = null;   // debounced active-workout persistence
+  let _libSearchTimer = null; // debounced library search rebuild
+
+  // Persist the active workout shortly after the last keystroke instead of on
+  // every one (each save serializes the whole workout to localStorage).
+  function saveActiveSoon() {
+    clearTimeout(_awSaveTimer);
+    _awSaveTimer = setTimeout(() => { if (workoutState) Storage.saveActiveWorkout(workoutState); }, 250);
+  }
 
   /* ────────────────── ICONS ────────────────── */
   function ic(id, size = '') {
@@ -819,7 +828,9 @@ const App = (() => {
     if (searchInp) {
       searchInp.addEventListener('input', e => {
         libraryQuery = e.target.value;
-        updateLibraryList(el);
+        // Rebuilding the full list is heavy with 200+ exercises — debounce it.
+        clearTimeout(_libSearchTimer);
+        _libSearchTimer = setTimeout(() => updateLibraryList(el), 160);
       });
       searchInp.focus();
     }
@@ -1000,7 +1011,7 @@ const App = (() => {
 
     document.getElementById('inp-weight')?.addEventListener('input', e => {
       curEx.sets[w.currentSetIdx].weight = parseFloat(e.target.value) || null;
-      Storage.saveActiveWorkout(w);
+      saveActiveSoon();
       const weightVal = parseFloat(e.target.value) || 0;
       const barbellArea = el.querySelector('.barbell')?.closest('.card');
       if (barbellArea && ex.trackingType === 'weight_reps' && weightVal >= 20) {
@@ -1009,17 +1020,17 @@ const App = (() => {
     });
     document.getElementById('inp-reps')?.addEventListener('input', e => {
       curEx.sets[w.currentSetIdx].reps = parseInt(e.target.value) || null;
-      Storage.saveActiveWorkout(w);
+      saveActiveSoon();
     });
     document.getElementById('inp-distance')?.addEventListener('input', e => {
       curEx.sets[w.currentSetIdx].distance = parseFloat(e.target.value) || null;
-      Storage.saveActiveWorkout(w);
+      saveActiveSoon();
     });
     document.getElementById('inp-duration')?.addEventListener('input', e => {
       const v = parseFloat(e.target.value) || null;
       // time mode stores seconds directly; distance mode's duration field is minutes
       curEx.sets[w.currentSetIdx].durationSec = v == null ? null : (mode === 'distance' ? Math.round(v * 60) : Math.round(v));
-      Storage.saveActiveWorkout(w);
+      saveActiveSoon();
     });
   }
 
@@ -1750,6 +1761,7 @@ const App = (() => {
 
   function finishWorkout() {
     if (!workoutState) return;
+    clearTimeout(_awSaveTimer);   // cancel any pending debounced save so it can't resurrect the cleared active workout
     clearInterval(workoutTimerInterval);
     clearInterval(restTimerInterval);
     document.getElementById('rest-timer-screen').style.display = 'none';
