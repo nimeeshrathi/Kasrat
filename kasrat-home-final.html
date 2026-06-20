@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasrat — Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--disp:"Space Grotesk",sans-serif;--ui:"Space Grotesk",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--ui); line-height:1.5; -webkit-font-smoothing:antialiased;
+  background:#15171A;
+  background-image:radial-gradient(1100px 600px at 50% -10%, #23272c, transparent 60%);
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:48px 24px;
+}
+.device{width:330px;height:690px;background:#0E0C0A;border-radius:48px;padding:8px;
+  box-shadow:0 50px 100px -40px rgba(0,0,0,.9)}
+.screen{position:relative;width:100%;height:100%;border-radius:40px;overflow:hidden;
+  display:flex;flex-direction:column;color:var(--ink);
+  --ink:#EAF1ED;--ink-2:#A6B6AE;--ink-3:#6E807A;
+  --accent:#A8652A;--accentsh:rgba(168,101,42,.75);--label:#E6A95C;
+  --track:rgba(255,255,255,.13);--card:rgba(255,255,255,.07);--cardb:rgba(255,255,255,.14);
+  background:
+    radial-gradient(120% 70% at 80% 4%, rgba(230,170,90,.13), transparent 50%),
+    linear-gradient(168deg,#2F4B41 0%,#243C34 55%,#1A2C27 100%);
+}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:86px;height:24px;background:#000;border-radius:13px;z-index:40}
+.sbar{height:44px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 6px;font-weight:600;font-size:12px}
+.body{flex:1;display:flex;flex-direction:column;padding:0 26px}
+
+.greet{padding-top:46px}
+.day{font-weight:600;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3)}
+.hello{font-family:var(--disp);font-weight:600;font-size:29px;letter-spacing:-.01em;margin-top:10px;line-height:1.08}
+
+.ring-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.ring{position:relative;width:156px;height:156px}
+.ring svg{transform:rotate(-90deg)}
+.ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .big{font-family:var(--disp);font-weight:600;font-size:44px;line-height:1;letter-spacing:-.01em}
+.ring .big small{font-size:20px;font-weight:400;color:var(--ink-3)}
+.ring .sub{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.line{text-align:center;font-size:12.5px;color:var(--ink-2);font-weight:500}
+.line b{color:var(--ink);font-weight:700}
+
+.today{border-radius:22px;padding:22px;margin-bottom:16px;
+  background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--cardb);
+  box-shadow:0 20px 44px -28px rgba(0,0,0,.5)}
+.today .lab{font-weight:600;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--label)}
+.today .name{font-family:var(--disp);font-weight:600;font-size:24px;letter-spacing:-.01em;margin-top:8px}
+.today .meta{font-size:12.5px;color:var(--ink-2);margin-top:7px}
+.start{display:flex;align-items:center;justify-content:center;gap:9px;height:52px;margin-top:20px;
+  border-radius:15px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 14px 30px -16px var(--accentsh);
+  transition:transform .2s ease}
+.start:hover{transform:translateY(-1.5px)}
+.start svg{width:17px;height:17px}
+
+.tabs{flex:none;height:64px;display:flex;border-top:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.04);backdrop-filter:blur(10px)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--ink-3)}
+.tab svg{width:21px;height:21px}
+.tab span{font-size:9px;font-weight:600;letter-spacing:.02em}
+.tab.on{color:var(--label)}
+.hbar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:108px;height:4px;border-radius:3px;background:rgba(255,255,255,.22);z-index:50}
+</style>
+</head>
+<body>
+
+<div class="device"><div class="screen">
+  <div class="island"></div>
+  <div class="sbar"><span>9:41</span><span>100%</span></div>
+
+  <div class="body">
+    <div class="greet">
+      <div class="day">Tuesday</div>
+      <div class="hello">Good evening,<br>Sam</div>
+    </div>
+
+    <div class="ring-wrap">
+      <div class="ring">
+        <svg width="156" height="156" viewBox="0 0 156 156">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EBB066"/><stop offset="1" stop-color="#C5742E"/></linearGradient></defs>
+          <circle cx="78" cy="78" r="65" fill="none" stroke="var(--track)" stroke-width="10"/>
+          <circle cx="78" cy="78" r="65" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="408" stroke-dashoffset="136"/>
+        </svg>
+        <div class="ctr"><div class="big">2<small>/3</small></div><div class="sub">this week</div></div>
+      </div>
+      <div class="line"><b>5-week streak</b> · one more keeps it going</div>
+    </div>
+
+    <div class="today">
+      <div class="lab">Today</div>
+      <div class="name">Routine A · Push</div>
+      <div class="start"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>Start workout</div>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg><span>Home</span></a>
+    <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg><span>Train</span></a>
+    <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg><span>History</span></a>
+    <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M7 15l4-5 3 3 4-6"/></svg><span>Stats</span></a>
+    <a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg><span>You</span></a>
+  </nav>
+  <div class="hbar"></div>
+</div></div>
+
+</body>
+</html>

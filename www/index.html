@@ -9,10 +9,12 @@
 <meta name="theme-color" content="#F2EEE6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15140F" media="(prefers-color-scheme: dark)">
 <title>Kasrat</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon.svg">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body data-theme="dark">
 
 <!-- ── SVG ICON SPRITE ── -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -44,6 +46,11 @@
 
 <!-- ── APP ROOT ── -->
 <div id="app">
+
+  <!-- TUTORIAL / WALKTHROUGH (first run, no tab bar) -->
+  <section id="screen-tutorial" class="screen no-tabs">
+    <!-- rendered by JS -->
+  </section>
 
   <!-- ONBOARDING (special: no tab bar) -->
   <section id="screen-onboarding" class="screen no-tabs slide-up">
@@ -79,8 +86,6 @@
   <section id="screen-routines" class="screen"><!-- rendered by JS --></section>
   <section id="screen-routine-editor" class="screen"><!-- rendered by JS --></section>
   <section id="screen-library" class="screen"><!-- rendered by JS --></section>
-  <section id="screen-progress" class="screen"><!-- rendered by JS --></section>
-  <section id="screen-muscle-balance" class="screen"><!-- rendered by JS --></section>
   <section id="screen-badges" class="screen"><!-- rendered by JS --></section>
 
   <!-- WORKOUT LOGGER (full-screen overlay, no tab bar) -->

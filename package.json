@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "python3 -m http.server 8731 --directory www",
+    "serve": "npx --yes serve www -l 8731",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
