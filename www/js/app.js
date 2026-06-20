@@ -388,6 +388,24 @@ const App = (() => {
     ).join('')}</nav>`;
   }
 
+  /* ────────────────── EXERCISE DEMO MEDIA ────────────────── */
+  // Lazy-load a per-exercise demo clip by convention: assets/exercises/<id>.<ext>.
+  // Tries webp → gif → png; reveals on first success, hides the box if none exist.
+  // Zero data/code changes to add one later — just drop the file in that folder.
+  const EX_MEDIA_EXTS = ['webp', 'gif', 'png'];
+  function loadExerciseMedia(exId) {
+    const box = document.getElementById('ex-media');
+    const img = document.getElementById('ex-media-img');
+    if (!box || !img) return;
+    let i = 0;
+    img.onload = () => { box.style.display = 'block'; };
+    img.onerror = () => {
+      if (++i < EX_MEDIA_EXTS.length) img.src = `assets/exercises/${exId}.${EX_MEDIA_EXTS[i]}`;
+      else box.remove();  // no clip for this exercise → leave the modal text-only
+    };
+    img.src = `assets/exercises/${exId}.${EX_MEDIA_EXTS[0]}`;
+  }
+
   /* ────────────────── HOME ────────────────── */
   // Paint the decorative rain once into #rain-fx. Pure CSS handles the motion
   // after this; varied speed/length/opacity + mid-flight negative delays give a
@@ -1805,7 +1823,12 @@ const App = (() => {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prRows(prs, '0 0 8px')||'<div class="kik" style="margin-bottom:8px">No records yet</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      // Demo clip placeholder: hidden until a matching file loads, removed if none exists.
+      const mediaHtml = `<div id="ex-media" style="display:none;margin-bottom:14px;border-radius:14px;overflow:hidden;background:var(--card-2);aspect-ratio:4/3">
+        <img id="ex-media-img" alt="${esc(ex.name)} demonstration" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>`;
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${mediaHtml}${prRows(prs, '0 0 8px')||'<div class="kik" style="margin-bottom:8px">No records yet</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
+      loadExerciseMedia(ex.id);
       return;
     }
     if (action === 'exercise-progress') {
