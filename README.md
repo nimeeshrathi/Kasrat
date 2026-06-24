@@ -1,74 +1,40 @@
 # Kasrat
 
-A mobile-first gym workout tracker — log lifts in real time, build reusable routines, and watch your progress through streaks, personal records, and muscle-balance insights. Inspired by apps like Hevy, with forgiving consistency mechanics that reward showing up rather than punishing rest.
+**A fast, private, offline workout tracker for Android.** Log every set, build and schedule routines, and watch your strength and BMI trend over time — no account, no cloud, no ads. Your training lives on your phone.
 
-Kasrat is a [Capacitor](https://capacitorjs.com/) app: a self-contained web front-end (vanilla HTML/CSS/JS, no build step) packaged for Android. All data lives on-device in `localStorage` — no account, no server, no network dependency.
+### 📲 Get it
 
-## Features
+- **[Download the APK](https://github.com/nimeeshrathi/Kasrat/releases/latest/download/Kasrat.apk)** (Android 7.0+)
+- **[Visit the site](https://nimeeshrathi.github.io/Kasrat/)** for an overview and install steps
 
-- **201-exercise library** — covering chest, back, shoulders, arms, legs, and core, each tagged with muscle groups, equipment, category (compound/isolation), tracking type, and bodyweight coefficients. Add your own custom exercises too.
-- **Routines with sections** — organise each routine into collapsible **Warm Up / Mobility / Primary / Secondary / Static Stretch** sections. Routines are reusable templates you can start any time — no day-based restrictions.
-- **Fast live logging** — weight × reps per set with the previous session's numbers shown as reference, quick-step weight buttons (+1.25 / +2.5 / +5 kg), an inline plate calculator, and a traffic-light cue (green = beating last time, yellow = matching, red = below).
-- **Inline set types** — tap **W / N / D / F** (warm-up / normal / drop / failure) directly on the active set; normal by default, no menu.
-- **Rest timer** — auto-starts after a logged set with category-based defaults, and vibrates when done.
-- **History & PRs** — chronological session history with a contribution heatmap; personal records for heaviest weight and best estimated 1RM (Epley formula), revealed on the post-workout summary.
-- **Progress & muscle balance** — estimated-1RM progression per lift and a fractional-volume breakdown across muscle groups (1.0× primary, 0.5× secondary) to surface neglected areas.
-- **Weekly streaks & badges** — a forgiving weekly-target streak (1–7 workouts/week, your choice) plus milestone and consistency badges.
-- **Backup** — export all your data to a JSON file from the Profile tab.
+Open the downloaded file on your phone, allow installing from unknown sources if prompted, and tap Install.
 
-## Tech
+---
 
-- **Framework:** Capacitor 8 (`@capacitor/core`, `@capacitor/cli`, `@capacitor/android`)
-- **Front-end:** plain HTML/CSS/JavaScript — no framework, no bundler
-- **Storage:** browser `localStorage` (keys prefixed `kasrat_`)
-- **App ID:** `com.kasrat.app` · **Web dir:** `www/`
+## What it does
 
-## Project structure
+- **Log workouts fast** — track weight × reps, bodyweight, time, and distance. Each set shows your previous session's numbers for reference, with a traffic-light cue (green = beating last time, amber = matching, red = below). Quick-step weight buttons (+1.25 / +2.5 / +5 kg) build on the weight you already lifted, plus an inline plate calculator.
 
-```
-.
-├── capacitor.config.json   # Capacitor config (appId, appName, webDir)
-├── package.json
-├── design.md               # Full product/design document
-├── kasrat-ui-mockup.html   # Static UI reference mockup
-└── www/                    # The app (Capacitor web root)
-    ├── index.html          # Screen shells, SVG icon sprite, tab bar
-    ├── css/styles.css      # Design system + per-screen theming
-    └── js/
-        ├── storage.js      # Data layer: exercises, routines, workouts, PRs, streaks, badges
-        └── app.js          # UI rendering, navigation, and workout-logging logic
-```
+- **Routines & schedule** — build reusable routines organised into sections (Warm Up / Primary / Secondary / Stretch) and pin them to weekdays. Start a planned session in one tap from the home screen.
 
-## Getting started
+- **Rest timer that buzzes** — auto-starts after a logged set with sensible defaults, and vibrates *and* notifies you when it's time for the next set — even with the phone locked.
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (for Capacitor tooling)
-- For Android builds: Android Studio + JDK
+- **Strength progress** — estimated-1RM trend lines per exercise, automatic personal records (heaviest weight and best est. 1RM), and a fractional muscle-balance breakdown that surfaces neglected areas.
 
-### Install
-```bash
-npm install
-```
+- **BMI tracking** — add your height and weight and plot your BMI over time against the healthy range, updated whenever you log a new weight.
 
-### Run in a browser
-The front-end is fully static, so you can preview it without Capacitor by serving the `www/` directory:
-```bash
-cd www
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
-> Tip: use a narrow (phone-width) viewport — the layout is capped at 430px.
+- **Streaks & badges** — a forgiving weekly-target streak (you pick 1–7 workouts/week) plus milestone and consistency badges to keep momentum.
 
-### Build & run on Android
-```bash
-npx cap add android      # first time only
-npx cap sync             # copy www/ into the native project
-npx cap open android     # open in Android Studio to run/build
-```
-Because the front-end has no build step, after editing files in `www/` just run `npx cap sync` (or `npx cap copy`) to push the changes into the native shell.
+- **History** — a chronological session log with a contribution heatmap.
 
-## Data & privacy
+- **Share routines** — export all your data to a file, and import a friend's routines — merged in safely without touching your own.
 
-Kasrat collects no personal information beyond a display name and keeps everything on the device. Units are kilograms only. To move your data to another device, use **Profile → Export data** and restore from the JSON backup.
+- **Private & offline** — no login, no servers, no tracking. Everything is stored on your device, and you own a one-tap backup file (Profile → Export data). Units are kilograms.
 
-See [`design.md`](./design.md) for the full product vision, data model, and roadmap.
+---
+
+## Privacy
+
+Kasrat collects no personal information beyond a display name and optional height/weight, and never connects to a server. To move your data to another device, use **Profile → Export data** and import the JSON backup on the new device.
+
+It's a self-contained app built with [Capacitor](https://capacitorjs.com/) — all data lives on-device. The full product and design notes are in [`design.md`](./design.md).
