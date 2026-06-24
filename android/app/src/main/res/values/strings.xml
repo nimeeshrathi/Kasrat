@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kasrat</string>
+    <string name="title_activity_main">Kasrat</string>
+    <string name="package_name">com.kasrat.app</string>
+    <string name="custom_url_scheme">com.kasrat.app</string>
+</resources>

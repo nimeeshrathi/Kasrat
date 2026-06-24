@@ -1501,15 +1501,80 @@ const App = (() => {
   /* ────────────────── REST TIMER ────────────────── */
   let restRemaining = 0;
   let restPaused = false;
+  let restEndsAt = 0;        // wall-clock end time, so a frozen webview can't drift the timer
+  let restDone = false;      // guards completion so it can only run once
+  let _restFinish = null;    // current timer's finisher, for the visibility handler
+
+  /* ── NATIVE DEVICE BRIDGE (Capacitor; no-ops gracefully on web) ──
+     window.Capacitor is injected late by the native runtime, so read it lazily
+     on each call rather than caching at parse time. */
+  function _plugin(name) { const c = window.Capacitor; return c && c.Plugins ? c.Plugins[name] : null; }
+  const REST_NOTIF_ID = 1;
+
+  async function ensureNotifPermission() {
+    const LN = _plugin('LocalNotifications');
+    if (!LN) return false;
+    try {
+      let p = await LN.checkPermissions();
+      if (p.display !== 'granted') p = await LN.requestPermissions();
+      return p.display === 'granted';
+    } catch (e) { return false; }
+  }
+
+  // In-app buzz when the timer ends with the app open. Prefers native Haptics,
+  // falls back to the web Vibration API in a browser/PWA.
+  function deviceBuzz(pattern) {
+    const H = _plugin('Haptics');
+    if (H) { try { H.vibrate({ duration: 600 }); return; } catch (e) {} }
+    if (navigator.vibrate) navigator.vibrate(pattern || [400, 100, 400]);
+  }
+
+  // Schedule an OS notification at the timer's end so it fires even when the
+  // app is backgrounded or the phone is locked (where setInterval is frozen).
+  async function scheduleRestNotification(seconds) {
+    const LN = _plugin('LocalNotifications');
+    if (!LN) return;
+    if (!(await ensureNotifPermission())) return;
+    try {
+      await LN.schedule({ notifications: [{
+        id: REST_NOTIF_ID,
+        title: 'Rest complete',
+        body: 'Time for your next set 💪',
+        schedule: { at: new Date(Date.now() + seconds * 1000), allowWhileIdle: true },
+      }] });
+    } catch (e) {}
+  }
+
+  function cancelRestNotification() {
+    const LN = _plugin('LocalNotifications');
+    if (!LN) return;
+    try { LN.cancel({ notifications: [{ id: REST_NOTIF_ID }] }); } catch (e) {}
+  }
 
   function startRestTimer(seconds, onDone) {
     clearInterval(restTimerInterval);
     restRemaining = seconds;
     restPaused = false;
+    restDone = false;
+    restEndsAt = Date.now() + seconds * 1000;
     const el = document.getElementById('rest-timer-screen');
     if (!el) return;
     el.style.display = 'flex';
     el.style.flexDirection = 'column';
+    scheduleRestNotification(seconds);  // fires even if the app is locked/backgrounded
+
+    // Single completion path. `buzz` only when it ends in the foreground; if it
+    // ended while the app was away, the OS notification already alerted the user.
+    function finishRest(buzz) {
+      if (restDone) return;
+      restDone = true;
+      clearInterval(restTimerInterval);
+      el.style.display = 'none';
+      cancelRestNotification();
+      if (buzz) deviceBuzz([400, 100, 400]);
+      if (onDone) onDone();
+    }
+    _restFinish = finishRest;
 
     function updateDisplay() {
       el.innerHTML = `
@@ -1532,28 +1597,32 @@ const App = (() => {
           <button class="btn out" style="flex:1;height:48px" id="rest-pause">${ic(restPaused?'bolt':'pause')}${restPaused?'Resume':'Pause'}</button>
           <button class="btn" style="flex:1;height:48px" id="rest-skip">${ic('skip')}Skip</button>
         </div>`;
-      document.getElementById('rest-skip')?.addEventListener('click', () => {
-        clearInterval(restTimerInterval);
-        el.style.display = 'none';
-        if (onDone) onDone();
-      });
+      document.getElementById('rest-skip')?.addEventListener('click', () => finishRest(false));
       document.getElementById('rest-pause')?.addEventListener('click', () => {
         restPaused = !restPaused;
+        // Keep the wall-clock end and the background notification in sync.
+        if (restPaused) { cancelRestNotification(); }
+        else { restEndsAt = Date.now() + restRemaining * 1000; scheduleRestNotification(restRemaining); }
         updateDisplay();
       });
     }
     updateDisplay();
     restTimerInterval = setInterval(() => {
       if (restPaused) return;
-      restRemaining--;
-      if (restRemaining <= 0) {
-        clearInterval(restTimerInterval);
-        el.style.display = 'none';
-        if (navigator.vibrate) navigator.vibrate([400, 100, 400]);
-        if (onDone) onDone();
-      } else { updateDisplay(); }
+      // Derive from wall-clock, not a decrement — survives the webview being frozen.
+      restRemaining = Math.max(0, Math.round((restEndsAt - Date.now()) / 1000));
+      if (restRemaining <= 0) finishRest(true);  // reached 0 in the foreground → buzz
+      else updateDisplay();
     }, 1000);
   }
+
+  // If the app returns to the foreground after the rest already ended (it ran
+  // while locked, where setInterval was frozen), close it silently — the OS
+  // notification already buzzed, so don't fire a second, stale buzz.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || restDone || !_restFinish || restPaused) return;
+    if (restEndsAt && Date.now() >= restEndsAt) _restFinish(false);
+  });
 
   /* ────────────────── MODALS / PICKERS ────────────────── */
   function showModal(html, onDismiss) {
@@ -1801,6 +1870,7 @@ const App = (() => {
       Storage.saveUser(user);
       btn.classList.toggle('on', user.notifications);
       btn.classList.toggle('off', !user.notifications);
+      if (user.notifications) ensureNotifPermission();  // ask the OS up front when turning it on
       return;
     }
     if (action === 'export-data') {

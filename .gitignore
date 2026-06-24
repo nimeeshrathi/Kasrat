@@ -1,2 +1,5 @@
 *~
 .DS_Store
+
+# Gradle build output generated inside the tracked Capacitor module
+node_modules/@capacitor/android/capacitor/build/
