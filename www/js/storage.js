@@ -547,6 +547,54 @@ const Storage = (() => {
     }, null, 2);
   }
 
+  // Non-destructive import: merge another user's routines (and any custom
+  // exercises they reference) into this device without touching existing data.
+  // Accepts the same file produced by exportData(). Returns {ok, count} | {ok:false, error}.
+  function importRoutines(json) {
+    let d;
+    try { d = JSON.parse(json); } catch (e) { return { ok: false, error: 'That file isn’t valid Kasrat data.' }; }
+    const incoming = Array.isArray(d.routines) ? d.routines : null;
+    if (!incoming || !incoming.length) return { ok: false, error: 'No routines found in this file.' };
+
+    // De-dupe imported custom exercises against what's already here, by name.
+    // Built-in exercises aren't in the file — their stable IDs resolve on their own.
+    const byName = new Map(getExercises().map(e => [e.name.trim().toLowerCase(), e]));
+    const idRemap = {};  // exerciseId in the file -> exerciseId on this device
+    (Array.isArray(d.exercises) ? d.exercises : []).forEach(ex => {
+      if (!ex || !ex.id || !ex.name) return;
+      const key = ex.name.trim().toLowerCase();
+      const match = byName.get(key);
+      if (match) { idRemap[ex.id] = match.id; return; }   // already have this exercise
+      const copy = { ...ex, id: uid(), isCustom: true };
+      delete copy.deleted;
+      saveExercise(copy);
+      byName.set(key, copy);
+      idRemap[ex.id] = copy.id;
+    });
+
+    const names = new Set(getRoutines().map(r => (r.name || '').trim().toLowerCase()));
+    let count = 0;
+    incoming.forEach(r => {
+      if (!r || !Array.isArray(r.exercises)) return;
+      const exercises = r.exercises.map(re => {
+        const resolved = idRemap[re.exerciseId] || re.exerciseId;
+        return getExerciseById(resolved) ? { ...re, exerciseId: resolved } : null;
+      }).filter(Boolean);
+      if (!exercises.length) return;
+      // Keep a friend's "Push Day" distinct from yours instead of silently overlapping.
+      let name = (r.name || 'Imported Routine').trim();
+      if (names.has(name.toLowerCase())) {
+        let n = 2;
+        while (names.has(`${name} (${n})`.toLowerCase())) n++;
+        name = `${name} (${n})`;
+      }
+      names.add(name.toLowerCase());
+      saveRoutine({ id: null, name, exercises });
+      count++;
+    });
+    return { ok: true, count };
+  }
+
   function importData(json) {
     try {
       const d = JSON.parse(json);
@@ -580,6 +628,6 @@ const Storage = (() => {
     getActiveWorkout, saveActiveWorkout, clearActiveWorkout,
     getLastSessionNumbers,
     computeWeeklyVolume, getMuscleVolume, computeTotalVolume,
-    exportData, importData,
+    exportData, importData, importRoutines,
   };
 })();

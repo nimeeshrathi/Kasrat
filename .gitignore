@@ -1,6 +1,2 @@
 *~
 .DS_Store
-
-# Generated exercise demo clips — rebuild with: python3 tools/build_exercise_media.py
-# (recipe is committed; the ~19MB of binaries are not, to keep git lean)
-www/assets/exercises/*.webp

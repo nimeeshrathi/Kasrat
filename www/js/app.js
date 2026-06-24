@@ -388,24 +388,6 @@ const App = (() => {
     ).join('')}</nav>`;
   }
 
-  /* ────────────────── EXERCISE DEMO MEDIA ────────────────── */
-  // Lazy-load a per-exercise demo clip by convention: assets/exercises/<id>.<ext>.
-  // Tries webp → gif → png; reveals on first success, hides the box if none exist.
-  // Zero data/code changes to add one later — just drop the file in that folder.
-  const EX_MEDIA_EXTS = ['webp', 'gif', 'png'];
-  function loadExerciseMedia(exId) {
-    const box = document.getElementById('ex-media');
-    const img = document.getElementById('ex-media-img');
-    if (!box || !img) return;
-    let i = 0;
-    img.onload = () => { box.style.display = 'block'; };
-    img.onerror = () => {
-      if (++i < EX_MEDIA_EXTS.length) img.src = `assets/exercises/${exId}.${EX_MEDIA_EXTS[i]}`;
-      else box.remove();  // no clip for this exercise → leave the modal text-only
-    };
-    img.src = `assets/exercises/${exId}.${EX_MEDIA_EXTS[0]}`;
-  }
-
   /* ────────────────── HOME ────────────────── */
   // Paint the decorative rain once into #rain-fx. Pure CSS handles the motion
   // after this; varied speed/length/opacity + mid-flight negative delays give a
@@ -817,7 +799,13 @@ const App = (() => {
             <span style="font-weight:500;font-size:13.5px">Export data</span>
             <span class="dim" style="font-size:12.5px">${ic('chev','14px')}</span>
           </div>
+          <div class="hair"></div>
+          <div class="btw" style="padding:11px 0;cursor:pointer" data-action="import-routines">
+            <span style="font-weight:500;font-size:13.5px">Import routines</span>
+            <span class="dim" style="font-size:12.5px">${ic('chev','14px')}</span>
+          </div>
         </div>
+        <div class="kik" style="margin:6px 2px 0;color:var(--ink-3);font-size:11px">Import adds routines from a shared file — your own data is kept.</div>
         <div style="margin-top:24px;text-align:center">
           <button class="chip" style="font-size:10.5px;color:var(--ink-3)" data-action="show-onboarding">Replay intro · your data is kept</button>
         </div>
@@ -1718,6 +1706,36 @@ const App = (() => {
       a.click(); URL.revokeObjectURL(url);
       return;
     }
+    if (action === 'import-routines') {
+      // Capacitor webview is picky: the input must be in the DOM and clicked
+      // synchronously within this user gesture, or the chooser won't open.
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json,.json';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        const cleanup = () => input.remove();
+        if (!file) { cleanup(); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          cleanup();
+          const res = Storage.importRoutines(reader.result);
+          if (res.ok) {
+            if (activeTab === 'train') renderScreen('train');  // reflect new routines if visible
+            const n = res.count;
+            showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:6px">Routines imported</div><div class="kik" style="margin-bottom:14px">Added ${n} routine${n===1?'':'s'}. Find ${n===1?'it':'them'} on the Train tab.</div><button class="btn" data-action="modal-close">Done</button>`);
+          } else {
+            showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:6px">Couldn’t import</div><div class="kik" style="margin-bottom:14px">${esc(res.error)}</div><button class="btn ghost" data-action="modal-close">Close</button>`);
+          }
+        };
+        reader.onerror = () => { cleanup(); showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:6px">Couldn’t read file</div><div class="kik" style="margin-bottom:14px">That file couldn’t be opened. Try exporting it again.</div><button class="btn ghost" data-action="modal-close">Close</button>`); };
+        reader.readAsText(file);
+      };
+      input.click();
+      return;
+    }
     if (action === 'edit-weekly-target') {
       const user = Storage.getUser() || {};
       const cur = user.weeklyTargetWorkouts || 3;
@@ -1823,12 +1841,7 @@ const App = (() => {
       const ex = Storage.getExerciseById(btn.dataset.id);
       if (!ex) return;
       const prs = Storage.getPRs()[ex.id] || {};
-      // Demo clip placeholder: hidden until a matching file loads, removed if none exists.
-      const mediaHtml = `<div id="ex-media" style="display:none;margin-bottom:14px;border-radius:14px;overflow:hidden;background:var(--card-2);aspect-ratio:4/3">
-        <img id="ex-media-img" alt="${esc(ex.name)} demonstration" style="width:100%;height:100%;object-fit:cover;display:block">
-      </div>`;
-      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${mediaHtml}${prRows(prs, '0 0 8px')||'<div class="kik" style="margin-bottom:8px">No records yet</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
-      loadExerciseMedia(ex.id);
+      showModal(`<div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(ex.name)}</div><div class="kik" style="margin-bottom:12px">${ex.equipment} · ${ex.category} · ${MUSCLE_LABELS[ex.primaryMuscleGroup]||ex.primaryMuscleGroup}</div>${prRows(prs, '0 0 8px')||'<div class="kik" style="margin-bottom:8px">No records yet</div>'}<button class="btn" style="margin-top:12px" data-action="modal-close">Close</button>`);
       return;
     }
     if (action === 'exercise-progress') {
