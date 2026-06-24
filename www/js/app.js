@@ -111,6 +111,74 @@ const App = (() => {
     </div>`;
   }
 
+  /* ────────────────── BMI ────────────────── */
+  // BMI is judged against the healthy band (18.5–24.9), not direction of change —
+  // so unlike the 1RM chart, we never colour by slope. The band is the reference.
+  const BMI_BANDS = [
+    { max: 18.5,     label: 'Underweight', color: 'var(--amber)' },
+    { max: 25,       label: 'Healthy',     color: 'var(--green)' },
+    { max: 30,       label: 'Overweight',  color: 'var(--amber)' },
+    { max: Infinity, label: 'Obese',       color: 'var(--below)' },
+  ];
+  function bmiCategory(bmi) { return BMI_BANDS.find(b => bmi < b.max) || BMI_BANDS[BMI_BANDS.length - 1]; }
+
+  // [{t, v}] oldest→newest, derived from the weight log + current height. Empty
+  // when height is unset so the BMI math never divides by zero.
+  function bmiSeries() {
+    const user = Storage.getUser();
+    const h = user && user.heightCm;
+    if (!(h > 0)) return [];
+    const m = h / 100;
+    return Storage.getWeightLog()
+      .filter(e => e.kg > 0)
+      .map(e => ({ t: e.t, v: Math.round((e.kg / (m * m)) * 10) / 10 }));
+  }
+
+  function bmiCard() {
+    const user = Storage.getUser();
+    const h = user && user.heightCm;
+    const series = bmiSeries();
+    if (!(h > 0) || !series.length) {
+      return `<div class="card" style="padding:13px;cursor:pointer;display:flex;align-items:center;gap:11px;background:var(--card-2);box-shadow:none" data-action="edit-body">
+        <div class="mark" style="width:34px;height:34px;border-radius:10px;flex:none">${ic('chart')}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13.5px">Track your BMI</div><div class="kik" style="margin-top:2px">Add your height & weight to plot the trend</div></div>
+        <span class="dim">${ic('chev','14px')}</span>
+      </div>`;
+    }
+    const n = series.length;
+    const last = series[n - 1].v;
+    const cat = bmiCategory(last);
+    const header = `<div class="btw" style="margin-bottom:8px">
+        <span class="kik" style="color:var(--ink-2)">BMI · ${user.weightKg || '—'} kg · ${h} cm</span>
+        <span class="num" style="font-weight:800;font-size:14px;color:${cat.color}">${last.toFixed(1)} <span style="font-size:10.5px;font-weight:700">${cat.label}</span></span>
+      </div>`;
+    if (n < 2) {
+      return `<div class="card" style="padding:12px 12px 11px;background:var(--card-2);box-shadow:none;cursor:pointer" data-action="edit-body">
+        ${header}
+        <div class="kik" style="color:var(--ink-3)">Log your weight again to see the trend line</div>
+      </div>`;
+    }
+    const W = 280, H = 76, padL = 8, padR = 6, padT = 10, padB = 8;
+    const vals = series.map(p => p.v);
+    const lo = Math.min(...vals, 18.5) - 1, hi = Math.max(...vals, 24.9) + 1, span = hi - lo || 1;
+    const x = i => padL + (i / (n - 1)) * (W - padL - padR);
+    const y = v => padT + (1 - (v - lo) / span) * (H - padT - padB);
+    const line = series.map((p, i) => `${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+    const bandTop = y(25), bandBot = y(18.5);  // healthy range 18.5–24.9
+    return `<div class="card" style="padding:12px 12px 10px;background:var(--card-2);box-shadow:none;cursor:pointer" data-action="edit-body">
+      ${header}
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block">
+        <rect x="${padL}" y="${bandTop.toFixed(1)}" width="${W - padL - padR}" height="${Math.max(0, bandBot - bandTop).toFixed(1)}" fill="var(--green)" fill-opacity=".12"/>
+        <polyline points="${line}" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <circle cx="${x(n - 1).toFixed(1)}" cy="${y(last).toFixed(1)}" r="3.2" fill="${cat.color}" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div class="btw" style="margin-top:6px">
+        <span class="kik" style="color:var(--ink-3)">${relTime(series[0].t)}</span>
+        <span class="kik" style="color:var(--ink-3)">healthy 18.5–24.9</span>
+      </div>
+    </div>`;
+  }
+
   /* ── PER-EXERCISE LOGGING MODE (weight / bodyweight / time / distance) ── */
   function logMode(ex) {
     if (!ex) return 'weight';
@@ -666,7 +734,9 @@ const App = (() => {
       </div>`;
 
     return `
-      ${prEntries.length ? '<div class="kik" style="margin:2px 2px 10px;color:var(--ink-2)">Estimated 1RM by exercise</div>' : ''}
+      <div class="kik" style="margin:2px 2px 10px;color:var(--ink-2)">Body</div>
+      ${bmiCard()}
+      ${prEntries.length ? '<div class="kik" style="margin:16px 2px 10px;color:var(--ink-2)">Estimated 1RM by exercise</div>' : '<div style="height:6px"></div>'}
       ${listHtml}`;
   }
 
@@ -710,7 +780,7 @@ const App = (() => {
   function statBox(icon, value, label, action, unit) {
     return `<div class="card" style="flex:1;min-width:0;padding:14px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px${action ? ';cursor:pointer' : ''}"${action ? ` data-action="${action}"` : ''}>
       <div style="height:18px;display:flex;align-items:center;color:var(--ink-2)">${ic(icon, '17px')}</div>
-      <div class="bign" style="font-size:21px;line-height:1;height:21px;display:flex;align-items:baseline;justify-content:center">${value}${unit ? `<span style="font-size:11px;font-weight:700;margin-left:1px">${unit}</span>` : ''}</div>
+      <div class="bign" style="font-size:21px;line-height:21px;height:21px;display:flex;align-items:flex-end;justify-content:center">${value}${unit ? `<span style="font-size:11px;font-weight:700;margin-left:1px">${unit}</span>` : ''}</div>
       <div class="kik" style="white-space:nowrap;display:flex;align-items:center;gap:3px">${label}${action ? ic('chev', '9px') : ''}</div>
     </div>`;
   }
@@ -763,6 +833,18 @@ const App = (() => {
             <svg class="chev2${scheduleOpen ? ' op' : ''}" style="width:15px;height:15px;color:var(--ink-3);flex:none"><use href="#ic-chev"/></svg>
           </div>
           ${scheduleOpen ? `<div style="padding:2px 14px 8px">${scheduleHtml}</div>` : ''}
+        </div>
+        <div class="kik" style="margin:15px 2px 8px;color:var(--ink-2)">Body</div>
+        <div class="card" style="padding:2px 14px">
+          <div class="btw" style="padding:11px 0;cursor:pointer" data-action="edit-body">
+            <span style="font-weight:500;font-size:13.5px">Height</span>
+            <span class="num dim" style="font-size:12.5px">${user?.heightCm ? user.heightCm + ' cm' : 'Add'} ${ic('chev','14px')}</span>
+          </div>
+          <div class="hair"></div>
+          <div class="btw" style="padding:11px 0;cursor:pointer" data-action="edit-body">
+            <span style="font-weight:500;font-size:13.5px">Weight</span>
+            <span class="num dim" style="font-size:12.5px">${user?.weightKg ? user.weightKg + ' kg' : 'Add'} ${ic('chev','14px')}</span>
+          </div>
         </div>
         <div class="kik" style="margin:15px 2px 8px;color:var(--ink-2)">Settings</div>
         <div class="card" style="padding:2px 14px">
@@ -1333,6 +1415,8 @@ const App = (() => {
   let onbStep = 1;
   let onbName = '';
   let onbGoal = 3;
+  let onbHeight = '';
+  let onbWeight = '';
 
   function renderOnboarding() {
     const screen = document.getElementById('screen-onboarding');
@@ -1355,9 +1439,19 @@ const App = (() => {
           ${[1,2,3,4,5,6,7].map(n=>`<button class="goalt${onbGoal===n?' on':''}" data-action="set-goal" data-goal="${n}"><div class="gn">${n}</div><small>DAY${n>1?'S':''}</small></button>`).join('')}
         </div>
         <div class="dim" style="margin-top:18px;font-size:12.5px;line-height:1.5">This becomes your weekly streak goal. Change it anytime — raising it never breaks your streak.</div>`,
+      3: `
+        <div class="kik">Optional</div>
+        <div class="title" style="font-size:26px;line-height:1.12;margin-top:6px">Height &<br>weight?</div>
+        <div class="dim" style="margin-top:11px;font-size:13px">Lets us chart your BMI over time. You can add or change this anytime in Settings.</div>
+        <div class="row" style="gap:10px;margin-top:24px">
+          <div style="flex:1"><div class="kik" style="margin-bottom:9px">Height (cm)</div>
+            <input class="inp" id="onb-height" type="number" inputmode="decimal" placeholder="175" value="${esc(onbHeight)}" autocomplete="off"></div>
+          <div style="flex:1"><div class="kik" style="margin-bottom:9px">Weight (kg)</div>
+            <input class="inp" id="onb-weight" type="number" inputmode="decimal" placeholder="70" value="${esc(onbWeight)}" autocomplete="off"></div>
+        </div>`,
     };
 
-    const isLast = onbStep === 2;
+    const isLast = onbStep === 3;
     screen.innerHTML = `
       <div class="body" style="padding:0">
         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px">
@@ -1365,7 +1459,7 @@ const App = (() => {
         </div>
         <div style="padding:14px 18px 24px">
           <div class="row" style="gap:6px;justify-content:center;margin-bottom:14px">
-            ${[1,2].map(i=>`<i class="odot${onbStep===i?' on':''}"></i>`).join('')}
+            ${[1,2,3].map(i=>`<i class="odot${onbStep===i?' on':''}"></i>`).join('')}
           </div>
           <button class="btn" id="onb-continue">${isLast ? ic('bolt') : ''}${isLast ? 'Get started' : 'Continue'}</button>
           ${onbStep > 1 ? '<button class="chip" style="width:100%;margin-top:8px;justify-content:center;display:flex" data-action="onb-back">Back</button>' : ''}
@@ -1374,6 +1468,8 @@ const App = (() => {
 
     const nameInp = document.getElementById('onb-name');
     if (nameInp) { nameInp.focus(); nameInp.addEventListener('input', e => { onbName = e.target.value; }); }
+    document.getElementById('onb-height')?.addEventListener('input', e => { onbHeight = e.target.value; });
+    document.getElementById('onb-weight')?.addEventListener('input', e => { onbWeight = e.target.value; });
     document.getElementById('onb-continue')?.addEventListener('click', onbNext);
   }
 
@@ -1381,13 +1477,21 @@ const App = (() => {
     if (onbStep === 1) {
       if (!onbName.trim()) { document.getElementById('onb-name')?.focus(); return; }
       onbStep = 2; renderOnboarding();
+    } else if (onbStep === 2) {
+      onbStep = 3; renderOnboarding();
     } else {
       finishOnboarding();
     }
   }
 
   function finishOnboarding() {
-    Storage.saveUser({ name: onbName.trim() || 'Lifter', weeklyTargetWorkouts: onbGoal });
+    const height = parseFloat(onbHeight), weight = parseFloat(onbWeight);
+    Storage.saveUser({
+      name: onbName.trim() || 'Lifter', weeklyTargetWorkouts: onbGoal,
+      ...(height > 0 ? { heightCm: Math.round(height) } : {}),
+      ...(weight > 0 ? { weightKg: Math.round(weight * 10) / 10 } : {}),
+    });
+    if (weight > 0) Storage.logWeight(weight);  // seed the BMI trend with day one
     Storage.setOnboarded();
     const onbScreen = document.getElementById('screen-onboarding');
     if (onbScreen) onbScreen.classList.remove('active');
@@ -1471,8 +1575,7 @@ const App = (() => {
     const html = `
       <div class="kik" style="margin-bottom:12px">Choose a routine</div>
       ${routines.length ? routines.map(r=>`<button class="chip" style="width:100%;display:flex;margin-bottom:8px;justify-content:flex-start" data-action="modal-pick-routine" data-id="${r.id}">${esc(r.name)}</button>`).join('') : '<div class="dim" style="font-size:13px;margin-bottom:12px">No routines yet</div>'}
-      <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>
-      <button class="btn out" style="margin-top:8px" data-action="modal-empty-workout">${ic('dumbbell')}Empty workout</button>`;
+      <button class="btn ghost" style="margin-top:4px" data-action="modal-close">Cancel</button>`;
     showModal(html, null);
     window._routinePickCallback = onPick;
   }
@@ -1522,11 +1625,6 @@ const App = (() => {
       if (window._routinePickCallback) { window._routinePickCallback(routine); delete window._routinePickCallback; }
       return;
     }
-    if (action === 'modal-empty-workout') {
-      hideModal();
-      if (window._routinePickCallback) { window._routinePickCallback(null); delete window._routinePickCallback; }
-      return;
-    }
 
     /* WORKOUT ACTIONS */
     if (action === 'log-set') { logCurrentSet(); return; }
@@ -1565,10 +1663,18 @@ const App = (() => {
       const step = parseFloat(btn.dataset.step);
       const inp = document.getElementById('inp-weight');
       if (inp && workoutState) {
-        const cur = parseFloat(inp.value) || 0;
+        const we = workoutState.exercises[workoutState.currentExIdx];
+        const setIdx = workoutState.currentSetIdx;
+        // Base the step on the current entry; if it's empty, build on the weight
+        // already lifted — the previous set this session, else last session's number.
+        let cur = parseFloat(inp.value);
+        if (!cur) {
+          for (let i = setIdx - 1; i >= 0 && !cur; i--) cur = we.sets[i].weight || 0;
+          if (!cur) cur = (we.lastSets && we.lastSets[setIdx] && we.lastSets[setIdx].weight) || 0;
+        }
         const newVal = Math.round((cur + step) * 100) / 100;
         inp.value = newVal;
-        workoutState.exercises[workoutState.currentExIdx].sets[workoutState.currentSetIdx].weight = newVal;
+        we.sets[setIdx].weight = newVal;
         Storage.saveActiveWorkout(workoutState);
         const barbellCard = document.querySelector('.barbell')?.closest('.card');
         if (barbellCard && newVal >= 20) barbellCard.innerHTML = renderBarbell(newVal);
@@ -1795,8 +1901,35 @@ const App = (() => {
       }
       return;
     }
+    if (action === 'edit-body') {
+      const user = Storage.getUser() || {};
+      const html = `
+        <div class="kik" style="margin-bottom:12px">Height & weight</div>
+        <div class="row" style="gap:10px">
+          <div style="flex:1"><div class="kik" style="margin-bottom:8px">Height (cm)</div>
+            <input class="inp" id="body-height-inp" type="number" inputmode="decimal" value="${user.heightCm||''}" placeholder="175"></div>
+          <div style="flex:1"><div class="kik" style="margin-bottom:8px">Weight (kg)</div>
+            <input class="inp" id="body-weight-inp" type="number" inputmode="decimal" value="${user.weightKg||''}" placeholder="70"></div>
+        </div>
+        <div class="kik" style="margin-top:10px;color:var(--ink-3)">Each weight you save adds a point to your BMI trend.</div>
+        <button class="btn" style="margin-top:14px" data-action="save-body">Save</button>
+        <button class="btn ghost" style="margin-top:8px" data-action="modal-close">Cancel</button>`;
+      showModal(html); return;
+    }
+    if (action === 'save-body') {
+      const user = Storage.getUser() || {};
+      const h = parseFloat(document.getElementById('body-height-inp')?.value);
+      const w = parseFloat(document.getElementById('body-weight-inp')?.value);
+      if (h > 0) user.heightCm = Math.round(h); else delete user.heightCm;
+      Storage.saveUser(user);          // height change alone never logs a weight point
+      if (w > 0) Storage.logWeight(w); // weight change records a dated BMI point
+      hideModal();
+      renderScreen(activeTab);         // refresh in place — edit-body opens from Profile or the Stats BMI card
+      return;
+    }
     if (action === 'show-onboarding') {
       onbStep = 1; onbName = Storage.getUser()?.name || ''; onbGoal = Storage.getUser()?.weeklyTargetWorkouts || 3;
+      onbHeight = Storage.getUser()?.heightCm || ''; onbWeight = Storage.getUser()?.weightKg || '';
       renderOnboarding();
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById('screen-onboarding').classList.add('active');

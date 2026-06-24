@@ -47,6 +47,24 @@ const Storage = (() => {
   function isOnboarded() { return !!get('onboarded'); }
   function setOnboarded() { set('onboarded', true); }
 
+  // Body-weight history for the BMI trend. One entry per day (latest wins);
+  // height lives on the user record since it rarely changes.
+  function getWeightLog() { return get('weightLog') || []; }
+  function logWeight(kg) {
+    kg = Math.round(parseFloat(kg) * 10) / 10;
+    if (!(kg > 0)) return getWeightLog();
+    const log = getWeightLog();
+    const today = new Date().toISOString().slice(0, 10);
+    const entry = { t: new Date().toISOString(), kg };
+    const idx = log.findIndex(e => (e.t || '').slice(0, 10) === today);
+    if (idx >= 0) log[idx] = entry; else log.push(entry);
+    log.sort((a, b) => (a.t || '').localeCompare(b.t || ''));
+    set('weightLog', log);
+    const user = getUser();
+    if (user) { user.weightKg = kg; saveUser(user); }
+    return log;
+  }
+
   function getDefaultExercises() {
     return [
       { id: 'bench_press', name: 'Bench Press', primaryMuscleGroup: 'chest', secondaryMuscleGroups: ['triceps', 'shoulders'], equipment: 'Barbell', category: 'compound', trackingType: 'weight_reps', isCustom: false },
@@ -543,7 +561,8 @@ const Storage = (() => {
       version: 1, exportedAt: new Date().toISOString(),
       user: getUser(), exercises: getExercises().filter(e => e.isCustom),
       routines: getRoutines(), schedule: getSchedule(),
-      workouts: getWorkouts(), prs: getPRs(), badges: getBadges()
+      workouts: getWorkouts(), prs: getPRs(), badges: getBadges(),
+      weightLog: getWeightLog()
     }, null, 2);
   }
 
@@ -604,6 +623,7 @@ const Storage = (() => {
       if (d.workouts) { set('workouts', d.workouts); _updateStreak(d.workouts); }
       if (d.prs) set('prs', d.prs);
       if (d.badges) set('badges', d.badges);
+      if (d.weightLog) set('weightLog', d.weightLog);
       if (d.exercises) {
         const defaults = getDefaultExercises();
         const customs = d.exercises.filter(e => e.isCustom);
@@ -618,6 +638,7 @@ const Storage = (() => {
     uid,
     getUser, saveUser,
     isOnboarded, setOnboarded,
+    getWeightLog, logWeight,
     getExercises, getExerciseById, saveExercise, deleteExercise,
     getRoutines, getRoutineById, saveRoutine, deleteRoutine,
     getSchedule, saveSchedule,
