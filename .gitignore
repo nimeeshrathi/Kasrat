@@ -3,3 +3,6 @@
 
 # Gradle build output generated inside the tracked Capacitor module
 node_modules/@capacitor/android/capacitor/build/
+
+# APKs are published as GitHub Release assets, not committed
+*.apk
