@@ -7,15 +7,19 @@
 - **[Download the APK](https://github.com/nimeeshrathi/Kasrat/releases/latest/download/Kasrat.apk)** (Android 7.0+)
 - **[Visit the site](https://nimeeshrathi.github.io/Kasrat/)** for an overview and install steps
 
-Open the downloaded file on your phone, allow installing from unknown sources if prompted, and tap Install.
+Open the downloaded file on your phone, allow installing from unknown sources if prompted, and tap Install. Updates install right over an older version — your routines, history and custom exercises are kept.
 
 ---
 
 ## What it does
 
-- **Log workouts fast** — track weight × reps, bodyweight, time, and distance. Each set shows your previous session's numbers for reference, with a traffic-light cue (green = beating last time, amber = matching, red = below). Quick-step weight buttons (+1.25 / +2.5 / +5 kg) build on the weight you already lifted, plus an inline plate calculator.
+- **Section-based live logger** — your workout flows one section at a time (warm-up first), keeping focus on the exercise you're on while the rest stay tucked into a clean list. Move between sections with Forward / Back. Starting a workout while one's in progress lets you resume it or start fresh.
 
-- **Routines & schedule** — build reusable routines organised into sections (Warm Up / Primary / Secondary / Stretch) and pin them to weekdays. Start a planned session in one tap from the home screen.
+- **Log workouts fast** — track weight × reps, bodyweight, time, and distance. Each set shows your previous session's numbers for reference, with a traffic-light cue (green = beating last time, amber = matching, red = below). Quick-step weight buttons (+1.25 / +2.5 / +5 kg) build on the weight you already lifted, plus an inline plate calculator. A W / N / D / F set-type guide (Warmup / Normal / Drop / Failure) sits right where you log.
+
+- **1000+ exercises** — a built-in library of over a thousand movements, including 120+ stretching and mobility exercises. Filter by muscle group, search by name, and add your own custom moves anytime.
+
+- **Routines & schedule** — build reusable routines organised into sections (Warm Up / Mobility / Primary / Secondary / Static Stretch) and pin them to weekdays. Start a planned session in one tap from the home screen.
 
 - **Rest timer that buzzes** — auto-starts after a logged set with sensible defaults, and vibrates *and* notifies you when it's time for the next set — even with the phone locked.
 
