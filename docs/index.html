@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kasrat — a lightweight workout tracker</title>
 <meta name="description" content="Kasrat is a fast, private, offline-first workout tracker for Android. Log lifts, build routines, track est. 1RM and BMI — no account, no cloud.">
+<meta name="theme-color" content="#1A2C27">
 <meta property="og:title" content="Kasrat — workout tracker">
 <meta property="og:description" content="Log lifts, build routines, track strength & BMI. Private, offline, no account.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,145 +13,143 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#F2EEE6; --card:#FFFFFF; --card-2:#FAF9F5;
-    --ink:#2C2822; --ink-2:#6F6A5D; --ink-3:#A9A290;
-    --line:#E9E4DA; --line-2:#DCD6CA;
-    --green:#5F8B73; --green-press:#4E775F; --amber:#C2A35E; --led:#E6C386;
-    --pine-1:#2F4B41; --pine-2:#243C34; --pine-3:#1A2C27;
-    --amber-accent:#CC9B66; --amber-label:#E6A95C;
-    --disp:"Archivo",system-ui,sans-serif; --ui:"Hanken Grotesk",system-ui,sans-serif;
+    /* app dark-theme palette */
+    --bg:#1A2C27; --hero:#16241F; --card-2:#1F362F;
+    --ink:#EAF1ED; --ink-2:#A6B6AE; --ink-3:#6E807A;
+    --line:#2E4840; --line-2:#3A564C;
+    --led:#F0CE85; --amber:#D4B26C; --warm:#D8A874; --green:#6FA382;
+    --disp:"Archivo",system-ui,sans-serif;
+    --ui:"Hanken Grotesk",system-ui,sans-serif;
     --home-disp:"Space Grotesk","Archivo",system-ui,sans-serif;
-    --r:18px; --r-sm:12px;
-    --sh:0 1px 2px rgba(20,16,10,.05),0 10px 26px -14px rgba(20,16,10,.16);
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-  body{font-family:var(--ui);color:var(--ink);background:var(--bg);line-height:1.5;
+  body{font-family:var(--ui);color:var(--ink);background:var(--bg);line-height:1.55;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
-  a{color:inherit}
-  .num{font-variant-numeric:tabular-nums}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+  a{color:inherit;text-decoration:none}
+
+  /* ── NAV ── */
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:26px 0}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--home-disp);font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;
+    background:linear-gradient(150deg,var(--green),#2F4B41);color:#fff;font-family:var(--disp);font-weight:900;font-size:17px}
+  .nav .gh{font-weight:600;font-size:13.5px;color:var(--ink-2)}
+  .nav .gh:hover{color:var(--ink)}
 
   /* ── HERO ── */
-  .hero{position:relative;overflow:hidden;color:#EAF1ED;
-    background:radial-gradient(120% 90% at 80% -10%,#34534741 0,transparent 60%),
-      linear-gradient(160deg,var(--pine-1) 0,var(--pine-2) 48%,var(--pine-3) 100%)}
-  .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:380px;height:380px;border-radius:50%;
-    border:2px solid rgba(235,176,102,.18);box-shadow:0 0 0 26px rgba(235,176,102,.06);pointer-events:none}
-  .nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
-  .brand{display:flex;align-items:center;gap:11px;font-family:var(--home-disp);font-weight:700;font-size:19px;letter-spacing:-.01em}
-  .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
-    background:linear-gradient(150deg,var(--green),#456A55);color:#fff;font-family:var(--disp);font-weight:900;font-size:18px}
-  .nav a.gh{font-weight:600;font-size:13.5px;color:#C9D6CF;text-decoration:none;padding:8px 14px;border-radius:10px;
-    border:1px solid rgba(255,255,255,.16)}
-  .nav a.gh:hover{background:rgba(255,255,255,.07)}
-  .hero-in{padding:46px 0 64px;position:relative;z-index:1}
-  .eyebrow{font-weight:700;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--amber-label)}
-  h1{font-family:var(--home-disp);font-weight:700;letter-spacing:-.025em;line-height:1.04;
-    font-size:clamp(38px,7vw,68px);margin:14px 0 0;max-width:14ch}
-  .lede{font-size:clamp(15px,2.2vw,18.5px);color:#BCCAC3;max-width:54ch;margin-top:18px}
-  .cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:30px}
-  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15px;text-decoration:none;
-    padding:15px 24px;border-radius:14px;border:1px solid transparent;transition:transform .12s ease,background .15s ease}
+  .hero{padding:64px 0 56px}
+  .eyebrow{font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--warm)}
+  h1{font-family:var(--home-disp);font-weight:700;letter-spacing:-.03em;line-height:1.02;
+    font-size:clamp(44px,9vw,84px);margin:18px 0 0}
+  h1 .dot{color:var(--led)}
+  .lede{font-size:clamp(15.5px,2.2vw,18px);color:var(--ink-2);max-width:48ch;margin-top:22px}
+  .cta{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:34px}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15px;
+    padding:15px 26px;border-radius:13px;transition:filter .15s ease,transform .12s ease}
   .btn:active{transform:translateY(1px)}
-  .btn-dl{background:linear-gradient(160deg,var(--led),var(--amber-accent));color:#2A2118;
-    box-shadow:0 12px 30px -12px rgba(204,155,102,.7)}
-  .btn-dl:hover{filter:brightness(1.04)}
-  .btn-gh{background:rgba(255,255,255,.06);color:#EAF1ED;border-color:rgba(255,255,255,.18)}
-  .btn-gh:hover{background:rgba(255,255,255,.1)}
-  .meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
-  .chip{font-size:12.5px;font-weight:600;color:#C9D6CF;background:rgba(255,255,255,.07);
-    border:1px solid rgba(255,255,255,.13);padding:6px 12px;border-radius:999px}
-  .chip b{color:var(--led)}
+  .btn-dl{background:linear-gradient(160deg,var(--led),var(--warm));color:#1A2C27}
+  .btn-dl:hover{filter:brightness(1.05)}
+  .btn-ghost{color:var(--ink-2);font-weight:600;font-size:14.5px}
+  .btn-ghost:hover{color:var(--ink)}
+  .meta{margin-top:22px;font-size:13px;color:var(--ink-3);letter-spacing:.01em}
+  .meta b{color:var(--ink-2);font-weight:600}
 
-  /* ── SECTIONS ── */
-  section.pad{padding:66px 0}
-  .kicker{font-weight:700;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--green)}
-  h2{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;line-height:1.1;
-    font-size:clamp(26px,4vw,38px);margin:10px 0 0}
-  .sub{color:var(--ink-2);font-size:16px;margin-top:12px;max-width:60ch}
+  /* ── RULE ── */
+  .rule{height:1px;background:var(--line);max-width:880px;margin:0 auto}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px;margin-top:34px}
-  .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--sh)}
-  .feat .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;
-    background:var(--card-2);border:1px solid var(--line)}
-  .feat h3{font-family:var(--disp);font-weight:800;font-size:16.5px;margin:14px 0 6px;letter-spacing:-.01em}
-  .feat p{color:var(--ink-2);font-size:13.7px;line-height:1.55}
+  /* ── SECTION ── */
+  section{padding:56px 0}
+  .kicker{font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+  h2{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;line-height:1.12;
+    font-size:clamp(24px,4vw,32px);margin:11px 0 0}
+  .sub{color:var(--ink-2);font-size:15.5px;margin-top:12px;max-width:56ch}
+
+  /* ── FEATURES (quiet list) ── */
+  .feats{margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .feat{background:var(--bg);padding:22px 22px}
+  .feat h3{font-family:var(--disp);font-weight:800;font-size:15.5px;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:9px}
+  .feat h3::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--led);flex:none}
+  .feat p{color:var(--ink-2);font-size:13.5px;line-height:1.55;margin-top:8px}
+  @media(max-width:620px){.feats{grid-template-columns:1fr}}
 
   /* ── INSTALL ── */
-  .install{background:var(--card-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:34px}
-  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--sh)}
-  .step .n{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:var(--disp);
-    font-weight:800;font-size:15px;color:#fff;background:linear-gradient(150deg,var(--green),#456A55)}
-  .step h3{font-family:var(--disp);font-weight:800;font-size:15.5px;margin:13px 0 6px}
-  .step p{color:var(--ink-2);font-size:13.5px;line-height:1.55}
-  .note{margin-top:26px;font-size:13px;color:var(--ink-3);max-width:64ch}
-  .dl-row{margin-top:30px}
+  .steps{margin-top:30px;display:flex;flex-direction:column;gap:2px}
+  .step{display:flex;gap:15px;align-items:baseline;padding:15px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .n{font-family:var(--disp);font-weight:800;font-size:14px;color:var(--led);width:22px;flex:none}
+  .step h3{font-family:var(--disp);font-weight:800;font-size:15px;display:inline}
+  .step p{display:inline;color:var(--ink-2);font-size:14px}
+  .step b{color:var(--ink);font-weight:600}
+  .dl-row{margin-top:32px}
+  .note{margin-top:22px;font-size:13px;color:var(--ink-3);max-width:62ch;line-height:1.6}
 
-  footer{padding:40px 0;color:var(--ink-3);font-size:13px}
-  footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
-  footer a{color:var(--green);font-weight:600;text-decoration:none}
+  /* ── FOOTER ── */
+  footer{padding:34px 0 48px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;
+    color:var(--ink-3);font-size:13px}
+  footer a{color:var(--green);font-weight:600}
 </style>
 </head>
 <body>
 
-<header class="hero">
-  <div class="wrap">
-    <nav class="nav">
-      <div class="brand"><span class="logo">K</span> Kasrat</div>
-      <a class="gh" href="https://github.com/nimeeshrathi/Kasrat" target="_blank" rel="noopener">View on GitHub ↗</a>
-    </nav>
-    <div class="hero-in">
-      <div class="eyebrow">Workout tracker · Android</div>
-      <h1>Train hard. Track light.</h1>
-      <p class="lede">Kasrat is a fast, private gym companion — log every set, build and schedule routines, and watch your strength and BMI trend over time. No account, no cloud, no bloat. Your training lives on your phone.</p>
-      <div class="cta">
-        <a class="btn btn-dl" href="https://github.com/nimeeshrathi/Kasrat/releases/latest/download/Kasrat.apk">⬇ Download APK</a>
-        <a class="btn btn-gh" href="#install">How to install</a>
-      </div>
-      <div class="meta">
-        <span class="chip"><b>v1.0</b> · Android 7+</span>
-        <span class="chip">~4.6 MB</span>
-        <span class="chip">No account</span>
-        <span class="chip">Works offline</span>
-      </div>
-    </div>
-  </div>
-</header>
+<div class="wrap">
+  <nav class="nav">
+    <div class="brand"><span class="logo">K</span> Kasrat</div>
+    <a class="gh" href="https://github.com/nimeeshrathi/Kasrat" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
 
-<section class="pad">
+  <header class="hero">
+    <div class="eyebrow">Workout tracker · Android</div>
+    <h1>Train hard.<br>Track light<span class="dot">.</span></h1>
+    <p class="lede">A fast, private gym companion. Log every set, build routines, and watch your strength trend — all on your phone. No account, no cloud, no bloat.</p>
+    <div class="cta">
+      <a class="btn btn-dl" href="https://github.com/nimeeshrathi/Kasrat/releases/latest/download/Kasrat.apk">⬇ Download APK</a>
+      <a class="btn-ghost" href="#install">How to install →</a>
+    </div>
+    <p class="meta"><b>v1.1</b> · Android 7+ · ~4.6 MB · No account · Works offline</p>
+  </header>
+</div>
+
+<div class="rule"></div>
+
+<section>
   <div class="wrap">
     <div class="kicker">What it does</div>
     <h2>Everything you need, nothing you don't</h2>
-    <p class="sub">Built for lifters who want to log fast and see real progress — not wrestle with sign-ups, ads, or a hundred settings.</p>
-    <div class="grid">
-      <div class="feat"><div class="ic">🏋️</div><h3>Log workouts fast</h3><p>Track weight × reps, bodyweight, time and distance. Per-set traffic lights show when you beat your last session.</p></div>
-      <div class="feat"><div class="ic">📋</div><h3>Routines &amp; schedule</h3><p>Build your own routines and pin them to weekdays. Start a planned session in one tap from the home screen.</p></div>
-      <div class="feat"><div class="ic">⏱️</div><h3>Rest timer that buzzes</h3><p>An auto-starting rest clock that vibrates and notifies you when it's time for the next set — even with the phone locked.</p></div>
-      <div class="feat"><div class="ic">📈</div><h3>Strength progress</h3><p>Estimated 1RM trend lines per exercise, automatic personal records, and a muscle-balance breakdown.</p></div>
-      <div class="feat"><div class="ic">⚖️</div><h3>BMI tracking</h3><p>Add your height &amp; weight and plot your BMI over time against the healthy range — updated whenever you log a new weight.</p></div>
-      <div class="feat"><div class="ic">🔥</div><h3>Streaks &amp; badges</h3><p>Weekly workout targets, training streaks, and unlockable badges keep the momentum going.</p></div>
-      <div class="feat"><div class="ic">🔄</div><h3>Share routines</h3><p>Export your data to a file and import a friend's routines — merged in safely, without touching your own.</p></div>
-      <div class="feat"><div class="ic">🔒</div><h3>Private &amp; offline</h3><p>No login, no servers, no tracking. Everything is stored on your device; you own a one-tap backup file.</p></div>
+    <div class="feats">
+      <div class="feat"><h3>Log workouts fast</h3><p>Weight × reps, bodyweight, time and distance. Per-set lights show when you beat your last session.</p></div>
+      <div class="feat"><h3>Section-based logger</h3><p>Your live workout flows one section at a time — warm-up first — with a clean, one-exercise focus.</p></div>
+      <div class="feat"><h3>1000+ exercises</h3><p>Over a thousand moves, including 120+ stretches and mobility work. Add your own anytime.</p></div>
+      <div class="feat"><h3>Routines &amp; schedule</h3><p>Build your own routines and pin them to weekdays. Start a planned session in one tap.</p></div>
+      <div class="feat"><h3>Rest timer that buzzes</h3><p>An auto-starting rest clock that vibrates and notifies you — even with the phone locked.</p></div>
+      <div class="feat"><h3>Strength &amp; BMI</h3><p>Estimated 1RM trends, automatic PRs, a muscle-balance breakdown, and your BMI over time.</p></div>
+      <div class="feat"><h3>Streaks &amp; badges</h3><p>Weekly targets, training streaks and unlockable badges keep the momentum going.</p></div>
+      <div class="feat"><h3>Private &amp; offline</h3><p>No login, no servers, no tracking. Everything stays on your device — with a one-tap backup.</p></div>
     </div>
   </div>
 </section>
 
-<section class="pad install" id="install">
+<div class="rule"></div>
+
+<section id="install">
   <div class="wrap">
     <div class="kicker">Get it on your phone</div>
     <h2>Install in three steps</h2>
-    <p class="sub">It's a debug build for personal use, so Android asks you to confirm an install from outside the Play Store. That's expected.</p>
+    <p class="sub">It's installed from outside the Play Store, so Android asks you to confirm. That's expected.</p>
     <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Download the APK</h3><p>Tap <b>Download APK</b> on your Android phone (or transfer the file to it).</p></div>
-      <div class="step"><div class="n">2</div><h3>Allow the install</h3><p>Open the file. If prompted, allow your browser or Files app to <b>install unknown apps</b>.</p></div>
-      <div class="step"><div class="n">3</div><h3>Open Kasrat</h3><p>Tap <b>Install</b>, then launch Kasrat from your app drawer and start logging.</p></div>
+      <div class="step"><span class="n">1</span><div><h3>Download the APK.</h3> <p>Tap the button below on your Android phone, or transfer the file to it.</p></div></div>
+      <div class="step"><span class="n">2</span><div><h3>Allow the install.</h3> <p>Open the file and, if prompted, allow your browser to <b>install unknown apps</b>.</p></div></div>
+      <div class="step"><span class="n">3</span><div><h3>Open Kasrat.</h3> <p>Tap <b>Install</b>, then launch it from your app drawer and start logging.</p></div></div>
     </div>
     <div class="dl-row"><a class="btn btn-dl" href="https://github.com/nimeeshrathi/Kasrat/releases/latest/download/Kasrat.apk">⬇ Download Kasrat.apk</a></div>
-    <p class="note">Requires Android 7.0 or newer. The app never connects to a server — if you ever switch phones, use <b>Export data</b> in the app to carry your routines and history across.</p>
+    <p class="note">Requires Android 7.0 or newer. The app never connects to a server — switching phones? Use <b>Export data</b> in the app to carry your routines and history across. Updates install right over an older version.</p>
   </div>
 </section>
+
+<div class="rule"></div>
 
 <footer>
   <div class="wrap">
