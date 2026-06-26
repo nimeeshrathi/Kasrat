@@ -31,6 +31,13 @@ const App = (() => {
       <span class="kik" style="margin-left:auto;align-self:center;color:#8C8678">type</span>
     </div>`;
   }
+  const SET_TYPE_NAME = { warmup:'Warmup', normal:'Normal', drop:'Drop', failure:'Failure' };
+  // Compact W/N/D/F reference, shown by the active set while logging.
+  function setTypeLegend() {
+    return `<div class="row" style="gap:11px;flex-wrap:wrap;margin-top:9px;padding:0 5px">
+      ${SET_TYPES.map(t => `<span style="display:flex;align-items:center;gap:4px"><b style="font-family:var(--disp);font-weight:800;font-size:12px;color:${t.color==='var(--ink)'?'var(--ink-2)':t.color}">${t.label}</b><span class="kik" style="color:var(--ink-3)">${SET_TYPE_NAME[t.k]}</span></span>`).join('')}
+    </div>`;
+  }
 
   // Compact value + label for the home "Latest PR" card, by PR type.
   function latestPRView(pr) {
@@ -1023,6 +1030,10 @@ const App = (() => {
     const exercises = Storage.getExercises().filter(e => !e.deleted);
     const muscles = ['chest','back','shoulders','arms','legs','core'];
 
+    // When picking an exercise (for a routine or an active workout), this screen
+    // is a search overlay — cover the bottom tab bar so it can't show through.
+    el.classList.toggle('no-tabs', libraryMode !== 'browse');
+
     el.innerHTML = `
       ${sbar()}
       <div class="body"><div class="scroll">
@@ -1055,19 +1066,9 @@ const App = (() => {
   }
 
   /* ────────────────── WORKOUT LOGGER ────────────────── */
-  // A fresh routine is pre-loaded with these so it is never empty on first use.
-  function defaultRoutineExercises() {
-    return [
-      { exerciseId: 'pushup',          section: 'Warm Up',   targetSets: 2, targetRepRange: '12–15', targetWeight: null },
-      { exerciseId: 'bench_press',     section: 'Primary',   targetSets: 4, targetRepRange: '6–8',   targetWeight: 60 },
-      { exerciseId: 'barbell_row',     section: 'Primary',   targetSets: 4, targetRepRange: '8–10',  targetWeight: 50 },
-      { exerciseId: 'ohp',             section: 'Primary',   targetSets: 3, targetRepRange: '8–10',  targetWeight: 40 },
-      { exerciseId: 'barbell_curl',    section: 'Secondary', targetSets: 3, targetRepRange: '10–12', targetWeight: 25 },
-      { exerciseId: 'tricep_pushdown', section: 'Secondary', targetSets: 3, targetRepRange: '12–15', targetWeight: 20 },
-    ];
-  }
+  // A new routine starts as a clean slate — the user adds exercises per section.
   function newRoutineDraft() {
-    return { id: null, name: 'New Routine', exercises: defaultRoutineExercises() };
+    return { id: null, name: 'New Routine', exercises: [] };
   }
 
   function buildWorkoutExercise(exerciseId, order, numSets = 3) {
@@ -1106,11 +1107,39 @@ const App = (() => {
     };
   }
 
+  /* ── SECTION HELPERS (logger pages one section at a time) ── */
+  // Sections that actually contain exercises, in their fixed display order.
+  function presentSections(w) {
+    const out = [];
+    (w.exercises || []).forEach(we => { const s = sectionOf(we); if (!out.includes(s)) out.push(s); });
+    return out.sort((a, b) => SECTIONS.indexOf(a) - SECTIONS.indexOf(b));
+  }
+  function sectionComplete(w, section) {
+    const inSec = (w.exercises || []).filter(we => sectionOf(we) === section);
+    return inSec.length > 0 && inSec.every(we => we.sets.every(s => s.isCompleted));
+  }
+  // First {exIdx,setIdx} with an unlogged set inside `section`, or null when done.
+  function firstIncompleteInSection(w, section) {
+    for (let i = 0; i < w.exercises.length; i++) {
+      if (sectionOf(w.exercises[i]) !== section) continue;
+      const si = w.exercises[i].sets.findIndex(s => !s.isCompleted);
+      if (si >= 0) return { exIdx: i, setIdx: si };
+    }
+    return null;
+  }
+  // Point the active set at a section: its first unlogged set, else its first exercise.
+  function gotoSection(w, section) {
+    const t = firstIncompleteInSection(w, section);
+    if (t) { w.currentExIdx = t.exIdx; w.currentSetIdx = t.setIdx; return; }
+    const i = w.exercises.findIndex(we => sectionOf(we) === section);
+    if (i >= 0) { w.currentExIdx = i; w.currentSetIdx = 0; }
+  }
+
   function renderWorkoutLogger(el) {
     const w = workoutState;
     if (!w) return;
-    const curEx = w.exercises[w.currentExIdx];
-    const ex = curEx ? Storage.getExerciseById(curEx.exerciseId) : null;
+    let curEx = w.exercises[w.currentExIdx];
+    let ex = curEx ? Storage.getExerciseById(curEx.exerciseId) : null;
     if (!ex) {
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0">
@@ -1129,54 +1158,143 @@ const App = (() => {
       return;
     }
 
-    const elapsed = Math.floor((Date.now() - new Date(w.startedAt).getTime() - (w._pausedOffset || 0)) / 1000);
+    // Keep the active (editable) set on a loggable set in the current section: if
+    // the pointer is on a finished/missing set but the section still has work,
+    // jump to that. Done sections leave the pointer put (footer shows "Next section").
+    const _curSet = curEx.sets[w.currentSetIdx];
+    if (!_curSet || _curSet.isCompleted) {
+      const t = firstIncompleteInSection(w, sectionOf(curEx));
+      if (t) { w.currentExIdx = t.exIdx; w.currentSetIdx = t.setIdx; curEx = w.exercises[w.currentExIdx]; ex = Storage.getExerciseById(curEx.exerciseId); }
+    }
 
+    const elapsed = Math.floor((Date.now() - new Date(w.startedAt).getTime() - (w._pausedOffset || 0)) / 1000);
     const mode = logMode(ex);
 
-    const setRows = curEx.sets.map((set, si) => {
-      const isActive = si === w.currentSetIdx;
-      const lastSet = curEx.lastSets ? curEx.lastSets[si] : null;
-      const prevStr = prevRef(mode, lastSet);
-      const lightColor = setLight(mode, set, lastSet);
+    const sections = presentSections(w);
+    const curSection = sectionOf(curEx);
+    const secIdx = sections.indexOf(curSection);
+    const secExercises = w.exercises.map((we, i) => ({ we, i })).filter(x => sectionOf(x.we) === curSection);
 
-      if (isActive && !set.isCompleted) {
+    // One set row — the single active set is editable; every other is a read-only
+    // card that's tappable (when unlogged) to make it the active set.
+    function setRowHtml(we, exIdx, set, si, xmode) {
+      const isActive = exIdx === w.currentExIdx && si === w.currentSetIdx && !set.isCompleted;
+      const lastSet = we.lastSets ? we.lastSets[si] : null;
+      const prevStr = prevRef(xmode, lastSet);
+      const lightColor = setLight(xmode, set, lastSet);
+      if (isActive) {
         return `
           <div class="score" style="padding:10px 6px;margin-top:6px;position:relative;overflow:hidden">
             <span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--led)"></span>
             <div class="row" style="padding-left:4px">
               <span style="width:28px;font-weight:700;color:#fff;font-size:12px">${setLabel(set, si)}</span>
               <span class="num" style="width:52px;font-size:11px;color:#9B9486">${prevStr}</span>
-              ${activeInputs(mode, set)}
+              ${activeInputs(xmode, set)}
               <span style="width:26px;text-align:right"><i style="display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid #5f5a50"></i></span>
             </div>
             ${setTypePicker(set, si)}
           </div>`;
       }
+      const dataAttr = set.isCompleted ? '' : ` data-action="activate-set" data-exidx="${exIdx}" data-si="${si}"`;
+      const style = `padding:9px 6px;margin-top:6px;border-radius:12px;position:relative;overflow:hidden;${set.isCompleted ? 'opacity:.7;' : 'cursor:pointer;'}${set.isCompleted && lightColor ? 'box-shadow:none;' : ''}`;
       return `
-        <div class="card" style="padding:9px 6px;${si<w.currentSetIdx?'opacity:.65;':''}margin-top:6px;border-radius:12px;position:relative;overflow:hidden;${set.isCompleted&&lightColor?`box-shadow:none`:''}">
+        <div class="card"${dataAttr} style="${style}">
           ${lightColor ? `<span style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${lightColor}"></span>` : ''}
-          <div class="row" style="padding-left:${lightColor?'4px':'0'}">
-            <span style="width:28px;font-weight:700;font-size:12px;${setLabelColor(set)?`color:${setLabelColor(set)}`:''}">${setLabel(set, si)}</span>
+          <div class="row" style="padding-left:${lightColor ? '4px' : '0'}">
+            <span style="width:28px;font-weight:700;font-size:12px;${setLabelColor(set) ? `color:${setLabelColor(set)}` : ''}">${setLabel(set, si)}</span>
             <span class="num dim3" style="width:52px;font-size:11px">${prevStr}</span>
-            ${displayCells(mode, set, lightColor)}
-            <span style="width:26px;text-align:right">${set.isCompleted ? `${ic('check','14px')}` : ''}</span>
+            ${displayCells(xmode, set, lightColor)}
+            <span style="width:26px;text-align:right">${set.isCompleted ? ic('check', '14px') : ''}</span>
           </div>
+        </div>`;
+    }
+
+    // Active-set extras (barbell + quick weight steps) — pertain to the one active set.
+    const activeSet = curEx.sets[w.currentSetIdx];
+    const hasActive = !!activeSet && !activeSet.isCompleted;
+    const weight = activeSet?.weight || 0;
+    const barbellCard = (hasActive && mode === 'weight' && weight >= 20) ? `
+      <div class="card" style="margin-top:12px;padding:11px 12px">${renderBarbell(weight)}</div>` : '';
+    const weightStep = (hasActive && mode === 'weight') ? `
+      <div class="row" style="gap:7px;margin-top:12px">
+        <button class="chip" data-action="weight-step" data-step="1.25">+1.25</button>
+        <button class="chip" data-action="weight-step" data-step="2.5">+2.5</button>
+        <button class="chip" data-action="weight-step" data-step="5">+5</button>
+      </div>` : '';
+
+    // Minimalist section list: each exercise is a single name row; only the active
+    // exercise expands into its set board for logging (one at a time, as before).
+    const sectionBody = secExercises.map(({ we, i }) => {
+      const xex = Storage.getExerciseById(we.exerciseId);
+      if (!xex) return '';
+      const xmode = logMode(xex);
+      const done = we.sets.filter(s => s.isCompleted).length;
+
+      if (i !== w.currentExIdx) {
+        const allDoneEx = done === we.sets.length;
+        return `
+          <div class="card" data-action="jump-exercise" data-idx="${i}" style="margin-top:8px;padding:13px 14px;cursor:pointer;display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(xex.name)}</div>
+              <div class="kik" style="margin-top:3px">${MUSCLE_LABELS[xex.primaryMuscleGroup] || ''} · ${done}/${we.sets.length} sets</div>
+            </div>
+            ${allDoneEx ? `<span style="color:var(--green)">${ic('check','16px')}</span>` : `<span class="dim">${ic('chev','14px')}</span>`}
+          </div>`;
+      }
+
+      const rows = we.sets.map((set, si) => setRowHtml(we, i, set, si, xmode)).join('');
+      return `
+        <div style="margin-top:14px">
+          <div class="btw" style="align-items:flex-start">
+            <div style="min-width:0">
+              <div class="title" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(xex.name)}</div>
+              <div class="kik" style="margin-top:4px">${MUSCLE_LABELS[xex.primaryMuscleGroup] || ''} · ${xex.equipment} · ${done}/${we.sets.length} sets</div>
+            </div>
+            <button class="iconbtn" style="width:30px;height:30px;flex:none" data-action="exercise-options" data-idx="${i}">${ic('dots')}</button>
+          </div>
+          <div class="row" style="padding:8px 6px 2px">${colHeader(xmode)}</div>
+          ${rows}
+          ${hasActive ? setTypeLegend() : ''}
+          ${barbellCard}
+          ${weightStep}
         </div>`;
     }).join('');
 
-    const weight = curEx.sets[w.currentSetIdx]?.weight || 0;
-    const barbellCard = (mode === 'weight' && weight >= 20) ? `
-      <div class="card" style="margin-top:12px;padding:11px 12px">
-        ${renderBarbell(weight)}
-      </div>` : '';
+    const sectionNav = `
+      <div class="btw" style="background:var(--card);border-radius:14px;padding:10px 12px">
+        <button class="iconbtn" style="width:34px;height:34px${secIdx <= 0 ? ';opacity:.35;pointer-events:none' : ''}" data-action="prev-section">${ic('back')}</button>
+        <div style="text-align:center;min-width:0;flex:1">
+          <div class="row" style="gap:6px;justify-content:center;align-items:center">
+            <i style="width:8px;height:8px;border-radius:3px;background:${SECTION_COLOR[curSection] || 'var(--red)'}"></i>
+            <span style="font-weight:800;font-size:15px;font-family:var(--disp)">${curSection}</span>
+          </div>
+          <div class="kik" style="margin-top:3px">Section ${secIdx + 1} of ${sections.length}</div>
+        </div>
+        <button class="iconbtn" style="width:34px;height:34px${secIdx >= sections.length - 1 ? ';opacity:.35;pointer-events:none' : ''}" data-action="next-section">${ic('chev')}</button>
+      </div>`;
 
     const allDone = w.exercises.every(we => we.sets.every(s => s.isCompleted));
-    const curExDone = curEx.sets.every(s => s.isCompleted);
+    const secDone = sectionComplete(w, curSection);
+    const hasNextSection = secIdx < sections.length - 1;
+    let footer;
+    if (allDone) {
+      footer = `<button class="btn" style="flex:1" data-action="finish-workout">${ic('check')}Finish workout</button>`;
+    } else if (!secDone && hasActive) {
+      footer = `
+        <button class="btn out" style="flex:1;height:48px" data-action="start-rest-timer">${ic('rest')}Rest ${fmtTime(activeSet?.restSec || 90)}</button>
+        <button class="btn" style="flex:1.3;height:48px" data-action="log-set">${ic('check')}Log set</button>`;
+    } else if (hasNextSection) {
+      footer = `
+        <button class="btn out" style="flex:1;height:48px" data-action="finish-workout">${ic('check')}Finish</button>
+        <button class="btn" style="flex:1.3;height:48px" data-action="next-section">Next section${ic('chev')}</button>`;
+    } else {
+      footer = `<button class="btn" style="flex:1" data-action="finish-workout">${ic('check')}Finish workout</button>`;
+    }
 
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0">
         <button class="iconbtn" style="width:32px;height:32px" data-action="pause-workout">${ic('back')}</button>
-        <div style="font-weight:700;font-size:13.5px;flex:1">${esc(w.name)}</div>
+        <div style="font-weight:700;font-size:13.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.name)}</div>
         <div class="score" style="padding:6px 10px;display:flex;align-items:center;gap:5px">
           ${ic('clock','12px')}
           <span class="led" id="workout-timer" style="font-size:13px">${fmtTime(elapsed)}</span>
@@ -1184,44 +1302,11 @@ const App = (() => {
       </div>
       <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
         <div class="scroll" style="padding-top:10px">
-          <div class="btw" style="align-items:flex-start">
-            <div>
-              <div class="title" style="font-size:22px">${esc(ex.name)}</div>
-              <div class="kik" style="margin-top:5px">${MUSCLE_LABELS[ex.primaryMuscleGroup]||''} · ${ex.equipment} · Set ${w.currentSetIdx+1} of ${curEx.sets.length}</div>
-            </div>
-            <button class="iconbtn" style="width:32px;height:32px" data-action="exercise-options">${ic('dots')}</button>
-          </div>
-          <div style="margin-top:12px">
-            <div class="row" style="padding:0 6px 7px">
-              ${colHeader(mode)}
-            </div>
-            ${setRows}
-          </div>
-          ${barbellCard}
-          ${mode === 'weight' ? `
-          <div class="row" style="gap:7px;margin-top:12px">
-            <button class="chip" data-action="weight-step" data-step="1.25">+1.25</button>
-            <button class="chip" data-action="weight-step" data-step="2.5">+2.5</button>
-            <button class="chip" data-action="weight-step" data-step="5">+5</button>
-          </div>` : ''}
-          <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
-            ${w.exercises.map((we, i) => {
-              const tex = Storage.getExerciseById(we.exerciseId);
-              const done = we.sets.filter(s=>s.isCompleted).length;
-              return `<button class="chip${i===w.currentExIdx?' on':''}" data-action="jump-exercise" data-idx="${i}" style="font-size:10.5px">${tex?.name.split(' ')[0]||'Ex'} ${done}/${we.sets.length}</button>`;
-            }).join('')}
-          </div>
+          ${sectionNav}
+          ${sectionBody}
         </div>
         <div style="padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:9px;flex-shrink:0">
-          ${allDone ? `
-            <button class="btn" style="flex:1" data-action="finish-workout">${ic('check')}Finish workout</button>
-          ` : curExDone ? `
-            <button class="btn out" style="flex:1;height:48px" data-action="add-set-to-ex">${ic('plus')}Add set</button>
-            <button class="btn" style="flex:1;height:48px" data-action="finish-workout">${ic('check')}Finish workout</button>
-          ` : `
-            <button class="btn out" style="flex:1;height:48px" data-action="start-rest-timer">${ic('rest')}Rest ${fmtTime(curEx.sets[w.currentSetIdx]?.restSec||90)}</button>
-            <button class="btn" style="flex:1.3;height:48px" data-action="log-set">${ic('check')}Log set</button>
-          `}
+          ${footer}
         </div>
       </div>`;
 
@@ -1672,18 +1757,26 @@ const App = (() => {
     if (action === 'pick-routine' || action === 'start-quick') {
       showRoutinePicker(r => startWorkout(r)); return;
     }
-    if (action === 'resume-workout') {
-      const w = Storage.getActiveWorkout();
-      if (w) {
-        if (w._pausedAt) {
-          w._pausedOffset = (w._pausedOffset || 0) + (Date.now() - w._pausedAt);
-          delete w._pausedAt;
-        }
-        workoutState = w;
-        workoutState.currentExIdx = workoutState.currentExIdx || 0;
-        workoutState.currentSetIdx = workoutState.currentSetIdx || 0;
-        openWorkoutLogger();
-      }
+    if (action === 'resume-workout') { resumeActiveWorkout(); return; }
+
+    /* START FRESH / RESUME CHOICE (shown when a workout is already in progress) */
+    if (action === 'start-choice-resume') {
+      hideModal(); _pendingRoutine = null; resumeActiveWorkout(); return;
+    }
+    if (action === 'start-choice-fresh') {
+      // Discarding logged work — confirm before throwing it away.
+      showModal(`
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px">Discard current workout?</div>
+        <div class="kik" style="margin-bottom:14px">Your in-progress sets will be lost. This can't be undone.</div>
+        <button class="btn" style="background:var(--red)" data-action="confirm-start-fresh">Discard & start fresh</button>
+        <button class="btn ghost" style="margin-top:8px" data-action="modal-close">Keep workout</button>`);
+      return;
+    }
+    if (action === 'confirm-start-fresh') {
+      hideModal();
+      Storage.clearActiveWorkout();
+      const routine = _pendingRoutine; _pendingRoutine = null;
+      beginFreshWorkout(routine);
       return;
     }
 
@@ -1724,6 +1817,27 @@ const App = (() => {
         workoutState.currentExIdx = idx;
         workoutState.currentSetIdx = workoutState.exercises[idx].sets.findIndex(s=>!s.isCompleted);
         if (workoutState.currentSetIdx < 0) workoutState.currentSetIdx = workoutState.exercises[idx].sets.length - 1;
+        renderScreen('workout-logger');
+      }
+      return;
+    }
+    if (action === 'next-section' || action === 'prev-section') {
+      if (!workoutState) return;
+      const secs = presentSections(workoutState);
+      const cur = sectionOf(workoutState.exercises[workoutState.currentExIdx]);
+      const ni = secs.indexOf(cur) + (action === 'next-section' ? 1 : -1);
+      if (ni < 0 || ni >= secs.length) return;
+      gotoSection(workoutState, secs[ni]);
+      Storage.saveActiveWorkout(workoutState);
+      renderScreen('workout-logger');
+      return;
+    }
+    if (action === 'activate-set') {
+      if (!workoutState) return;
+      const exIdx = parseInt(btn.dataset.exidx), si = parseInt(btn.dataset.si);
+      if (workoutState.exercises[exIdx]?.sets[si]) {
+        workoutState.currentExIdx = exIdx;
+        workoutState.currentSetIdx = si;
         renderScreen('workout-logger');
       }
       return;
@@ -1816,7 +1930,11 @@ const App = (() => {
     if (action === 'pick-exercise') {
       const exId = btn.dataset.id;
       if (libraryMode === 'workout-add' && workoutState) {
-        workoutState.exercises.push(buildWorkoutExercise(exId, workoutState.exercises.length));
+        // Drop the new exercise into the section the user is currently logging.
+        const curWe = workoutState.exercises[workoutState.currentExIdx];
+        const we = buildWorkoutExercise(exId, workoutState.exercises.length);
+        we.section = curWe ? sectionOf(curWe) : 'Primary';
+        workoutState.exercises.push(we);
         workoutState.currentExIdx = workoutState.exercises.length - 1;
         workoutState.currentSetIdx = 0;
         Storage.saveActiveWorkout(workoutState);
@@ -2087,6 +2205,16 @@ const App = (() => {
     }
     if (action === 'exercise-options') {
       if (!workoutState) return;
+      // Target the exercise whose menu was tapped, so "Add set" lands on it.
+      if (btn.dataset.idx != null) {
+        const idx = parseInt(btn.dataset.idx);
+        const we = workoutState.exercises[idx];
+        if (we) {
+          workoutState.currentExIdx = idx;
+          const fi = we.sets.findIndex(s => !s.isCompleted);
+          workoutState.currentSetIdx = fi >= 0 ? fi : we.sets.length - 1;
+        }
+      }
       const curEx = workoutState.exercises[workoutState.currentExIdx];
       const ex = curEx ? Storage.getExerciseById(curEx.exerciseId) : null;
       if (!ex) return;
@@ -2132,21 +2260,50 @@ const App = (() => {
   }
 
   /* ────────────────── WORKOUT FLOW ────────────────── */
+  let _pendingRoutine = null;  // routine chosen while another workout is still in progress
+
   function startWorkout(routine) {
     const existing = Storage.getActiveWorkout();
-    // Only resume an existing session if it actually has logged content — a
-    // leftover empty/contentless session must never hijack a freshly chosen routine.
+    // A session with at least one logged set is "in progress" — never silently
+    // resume or discard it. Let the user choose: Resume, or Start Fresh.
     const hasContent = existing && (existing.exercises || []).some(e =>
       (e.sets || []).some(s => s.isCompleted));
-    if (hasContent) {
-      workoutState = existing;
-    } else {
-      workoutState = buildNewWorkout(routine);
-      workoutState.currentExIdx = 0;
-      workoutState.currentSetIdx = 0;
-    }
+    if (hasContent) { _pendingRoutine = routine; showStartChoice(existing); return; }
+    beginFreshWorkout(routine);
+  }
+
+  function beginFreshWorkout(routine) {
+    workoutState = buildNewWorkout(routine);
+    workoutState.currentExIdx = 0;
+    workoutState.currentSetIdx = 0;
     Storage.saveActiveWorkout(workoutState);
     openWorkoutLogger();
+  }
+
+  // Resume the saved active workout, settling any paused-time offset first.
+  function resumeActiveWorkout() {
+    const w = Storage.getActiveWorkout();
+    if (!w) return;
+    if (w._pausedAt) {
+      w._pausedOffset = (w._pausedOffset || 0) + (Date.now() - w._pausedAt);
+      delete w._pausedAt;
+    }
+    workoutState = w;
+    workoutState.currentExIdx = workoutState.currentExIdx || 0;
+    workoutState.currentSetIdx = workoutState.currentSetIdx || 0;
+    openWorkoutLogger();
+  }
+
+  // Choice shown when a workout is started while another is in progress.
+  function showStartChoice(existing) {
+    const done = (existing.exercises || []).reduce((n, e) =>
+      n + (e.sets || []).filter(s => s.isCompleted).length, 0);
+    showModal(`
+      <div style="font-weight:700;font-size:16px;margin-bottom:4px">Workout in progress</div>
+      <div class="kik" style="margin-bottom:14px">${esc(existing.name || 'Active workout')} · ${done} set${done === 1 ? '' : 's'} logged</div>
+      <button class="btn" data-action="start-choice-resume">${ic('bolt')}Resume</button>
+      <button class="btn out" style="margin-top:8px" data-action="start-choice-fresh">${ic('plus')}Start fresh</button>
+      <button class="btn ghost" style="margin-top:8px" data-action="modal-close">Cancel</button>`);
   }
 
   function openWorkoutLogger() {
@@ -2184,22 +2341,18 @@ const App = (() => {
 
     const secs = curSet.restSec || 90;
 
-    const nextSetIdx = workoutState.currentSetIdx + 1;
-    if (nextSetIdx < curEx.sets.length) {
-      workoutState.currentSetIdx = nextSetIdx;
-    } else {
-      const nextExIdx = workoutState.currentExIdx + 1;
-      if (nextExIdx < workoutState.exercises.length) {
-        workoutState.currentExIdx = nextExIdx;
-        workoutState.currentSetIdx = 0;
-      }
-    }
+    // Advance only within the current section. When every set in it is logged,
+    // the pointer stays put and the footer becomes "Next section" — the user
+    // crosses the boundary deliberately rather than being carried across.
+    const curSection = sectionOf(curEx);
+    const next = firstIncompleteInSection(workoutState, curSection);
+    if (next) { workoutState.currentExIdx = next.exIdx; workoutState.currentSetIdx = next.setIdx; }
 
     Storage.saveActiveWorkout(workoutState);
     renderScreen('workout-logger');
-    // Don't pop a rest timer over the finish screen once everything's logged.
+    // Don't pop a rest timer over the finish screen, nor once the section is done.
     const allDone = workoutState.exercises.every(we => we.sets.every(s => s.isCompleted));
-    if (!allDone) startRestTimer(secs, () => { renderScreen('workout-logger'); });
+    if (next && !allDone) startRestTimer(secs, () => { renderScreen('workout-logger'); });
   }
 
   function finishWorkout() {
@@ -2243,6 +2396,56 @@ const App = (() => {
     document.getElementById('modal-overlay')?.addEventListener('click', e => {
       if (e.target === document.getElementById('modal-overlay')) hideModal();
     });
+
+    // Android hardware back button. Without a handler Capacitor exits the app;
+    // instead we unwind the UI one layer at a time, only exiting from Home.
+    function handleHardwareBack(AppPlugin) {
+      // 1) A modal is the topmost layer.
+      const overlay = document.getElementById('modal-overlay');
+      if (overlay && getComputedStyle(overlay).display !== 'none') { hideModal(); return; }
+      // 2) The rest-timer overlay — dismiss it like Skip.
+      const restEl = document.getElementById('rest-timer-screen');
+      if (restEl && restEl.style.display !== 'none') {
+        if (_restFinish) _restFinish(false); else restEl.style.display = 'none';
+        return;
+      }
+      // 3) Onboarding / tutorial: step back, or do nothing on the first step.
+      const tut = document.getElementById('screen-tutorial');
+      if (tut && tut.classList.contains('active')) { if (tutStep > 0) tutNav(-1); return; }
+      const onb = document.getElementById('screen-onboarding');
+      if (onb && onb.classList.contains('active')) { if (onbStep > 1) { onbStep--; renderOnboarding(); } return; }
+      // 4) Inside the logger — leave to Home but PRESERVE the session (same as pause).
+      const logger = document.getElementById('screen-workout-logger');
+      if (logger && logger.classList.contains('active')) {
+        if (workoutState) { workoutState._pausedAt = Date.now(); Storage.saveActiveWorkout(workoutState); }
+        clearInterval(workoutTimerInterval);
+        clearInterval(restTimerInterval);
+        if (restEl) restEl.style.display = 'none';
+        logger.classList.remove('active');
+        setActiveTab('home'); return;
+      }
+      // 5) Session summary acts like Done.
+      const summary = document.getElementById('screen-session-summary');
+      if (summary && summary.classList.contains('active')) {
+        workoutState = null;
+        summary.classList.remove('active');
+        setActiveTab('home'); return;
+      }
+      // 6) Anywhere else in the app — any tab or pushed sub-screen (editor,
+      //    library, badges…) → go straight Home. Only when already sitting on
+      //    Home do we let the OS background the app.
+      const onHome = activeTab === 'home' && screenStack.length === 1 && screenStack[0] === 'home';
+      if (!onHome) { setActiveTab('home'); return; }
+      AppPlugin.exitApp();
+    }
+    // window.Capacitor can be injected a tick after DOMContentLoaded on a cold
+    // start, so don't cache a null App plugin — retry briefly until it appears
+    // (mirrors the lazy-read discipline noted on _plugin()). Registers exactly once.
+    (function registerBackButton(tries) {
+      const AppPlugin = _plugin('App');
+      if (AppPlugin) { AppPlugin.addListener('backButton', () => handleHardwareBack(AppPlugin)); return; }
+      if (tries > 0) setTimeout(() => registerBackButton(tries - 1), 200);
+    })(15);  // ~3s of retries, then give up (e.g. plain web with no native bridge)
 
     // Swipe left/right to move between root tabs.
     const appEl = document.getElementById('app');
